@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "X8RsEJHG18s=",
+  "dgSpecHash": "vkwOdN+qaQY=",
   "success": true,
-  "projectFilePath": "C:\\Users\\euddy\\Desktop\\Pagina web\\MiniTicker\\MiniTickerAPI\\MiniTicker.Application\\MiniTicker.Core.Application.csproj",
+  "projectFilePath": "C:\\Users\\euddy\\Desktop\\Pagina web\\SistemaDeInventarioBackend\\MiniTickerAPI\\MiniTicker.Application\\MiniTicker.Core.Application.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\euddy\\.nuget\\packages\\microsoft.entityframeworkcore\\10.0.1\\microsoft.entityframeworkcore.10.0.1.nupkg.sha512",
     "C:\\Users\\euddy\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\10.0.1\\microsoft.entityframeworkcore.abstractions.10.0.1.nupkg.sha512",

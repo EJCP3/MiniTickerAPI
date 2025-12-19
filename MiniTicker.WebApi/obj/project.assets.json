@@ -1311,11 +1311,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\euddy\\Desktop\\Pagina web\\MiniTicker\\MiniTickerAPI\\MiniTicker.WebApi\\MiniTicker.WebApi.csproj",
+      "projectUniqueName": "C:\\Users\\euddy\\Desktop\\Pagina web\\SistemaDeInventarioBackend\\MiniTickerAPI\\MiniTicker.WebApi\\MiniTicker.WebApi.csproj",
       "projectName": "MiniTicker.WebApi",
-      "projectPath": "C:\\Users\\euddy\\Desktop\\Pagina web\\MiniTicker\\MiniTickerAPI\\MiniTicker.WebApi\\MiniTicker.WebApi.csproj",
+      "projectPath": "C:\\Users\\euddy\\Desktop\\Pagina web\\SistemaDeInventarioBackend\\MiniTickerAPI\\MiniTicker.WebApi\\MiniTicker.WebApi.csproj",
       "packagesPath": "C:\\Users\\euddy\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\euddy\\Desktop\\Pagina web\\MiniTicker\\MiniTickerAPI\\MiniTicker.WebApi\\obj\\",
+      "outputPath": "C:\\Users\\euddy\\Desktop\\Pagina web\\SistemaDeInventarioBackend\\MiniTickerAPI\\MiniTicker.WebApi\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -1336,11 +1336,11 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\euddy\\Desktop\\Pagina web\\MiniTicker\\MiniTickerAPI\\MiniTicker.Application\\MiniTicker.Core.Application.csproj": {
-              "projectPath": "C:\\Users\\euddy\\Desktop\\Pagina web\\MiniTicker\\MiniTickerAPI\\MiniTicker.Application\\MiniTicker.Core.Application.csproj"
+            "C:\\Users\\euddy\\Desktop\\Pagina web\\SistemaDeInventarioBackend\\MiniTickerAPI\\MiniTicker.Application\\MiniTicker.Core.Application.csproj": {
+              "projectPath": "C:\\Users\\euddy\\Desktop\\Pagina web\\SistemaDeInventarioBackend\\MiniTickerAPI\\MiniTicker.Application\\MiniTicker.Core.Application.csproj"
             },
-            "C:\\Users\\euddy\\Desktop\\Pagina web\\MiniTicker\\MiniTickerAPI\\MiniTicker.Infrastructure.Persistence\\MiniTicker.Infrastructure.Persistence.csproj": {
-              "projectPath": "C:\\Users\\euddy\\Desktop\\Pagina web\\MiniTicker\\MiniTickerAPI\\MiniTicker.Infrastructure.Persistence\\MiniTicker.Infrastructure.Persistence.csproj"
+            "C:\\Users\\euddy\\Desktop\\Pagina web\\SistemaDeInventarioBackend\\MiniTickerAPI\\MiniTicker.Infrastructure.Persistence\\MiniTicker.Infrastructure.Persistence.csproj": {
+              "projectPath": "C:\\Users\\euddy\\Desktop\\Pagina web\\SistemaDeInventarioBackend\\MiniTickerAPI\\MiniTicker.Infrastructure.Persistence\\MiniTicker.Infrastructure.Persistence.csproj"
             }
           }
         }

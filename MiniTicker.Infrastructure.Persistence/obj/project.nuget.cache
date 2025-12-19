@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "21goNGEFe9k=",
+  "dgSpecHash": "DkFlWcRMo0M=",
   "success": true,
-  "projectFilePath": "C:\\Users\\euddy\\Desktop\\Pagina web\\MiniTicker\\MiniTickerAPI\\MiniTicker.Infrastructure.Persistence\\MiniTicker.Infrastructure.Persistence.csproj",
+  "projectFilePath": "C:\\Users\\euddy\\Desktop\\Pagina web\\SistemaDeInventarioBackend\\MiniTickerAPI\\MiniTicker.Infrastructure.Persistence\\MiniTicker.Infrastructure.Persistence.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\euddy\\.nuget\\packages\\azure.core\\1.47.1\\azure.core.1.47.1.nupkg.sha512",
     "C:\\Users\\euddy\\.nuget\\packages\\azure.identity\\1.14.2\\azure.identity.1.14.2.nupkg.sha512",
