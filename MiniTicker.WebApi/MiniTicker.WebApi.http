@@ -1,0 +1,6 @@
+@MiniTicker.WebApi_HostAddress = http://localhost:5232
+
+GET {{MiniTicker.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
