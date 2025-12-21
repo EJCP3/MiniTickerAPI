@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MiniTicker.Core.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e225ffe4b4c0abea3d22148494c184b019bba11e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+67a1f4425780143589c941cb4b94ae8dae4906bf")]
 [assembly: System.Reflection.AssemblyProductAttribute("MiniTicker.Core.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MiniTicker.Core.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
