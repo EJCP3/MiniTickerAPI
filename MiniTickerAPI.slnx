@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/source/" />
+  <Folder Name="/source/Core/">
+    <Project Path="MiniTicker.Application/MiniTicker.Core.Application.csproj" Id="afac20c0-afb8-47a1-ac7d-f27075245148" />
+    <Project Path="MiniTicker.Domain/MiniTicker.Core.Domain.csproj" Id="1de16a71-7393-44ef-a74a-afb42ca01bce" />
+  </Folder>
+  <Folder Name="/Source/Infrastructure/">
+    <Project Path="MiniTicker.Infrastructure.Persistence/MiniTicker.Infrastructure.Persistence.csproj" Id="f6f45921-dbca-458d-b613-b94c497b229a" />
+  </Folder>
+  <Folder Name="/source/Presentation/">
+    <Project Path="MiniTicker.WebApi/MiniTicker.WebApi.csproj" Id="515efcc3-5db9-45fc-a082-1c2b15ff31f8" />
+  </Folder>
+</Solution>
