@@ -10,7 +10,7 @@ using MiniTicker.Core.Domain.Entities;
 
 namespace MiniTicker.Core.Application.Services
 {
-    internal class AreaService : IAreaService
+    public class AreaService : IAreaService
     {
         private readonly IAreaRepository _areaRepository;
 

@@ -10,7 +10,7 @@ using MiniTicker.Core.Domain.Entities;
 
 namespace MiniTicker.Core.Application.Services
 {
-    internal class TipoSolicitudService : ITipoSolicitudService
+    public class TipoSolicitudService : ITipoSolicitudService
     {
         private readonly ITipoSolicitudRepository _repository;
 

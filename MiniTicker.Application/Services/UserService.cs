@@ -12,7 +12,7 @@ using MiniTicker.Core.Domain.Enums;
 
 namespace MiniTicker.Core.Application.Services
 {
-    internal class UserService : IUserService
+    public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
         private readonly IFileStorageService _fileStorageService;

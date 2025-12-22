@@ -3,28 +3,48 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MiniTicker.Core.Application.Interfaces.Repositories;
 using MiniTicker.Core.Application.Interfaces.Services;
-using MiniTicker.Infrastructure.Persistence;
+using MiniTicker.Core.Application.Services;
 using MiniTicker.Infrastructure.Persistence.Repositories;
 using MiniTicker.Infrastructure.Persistence.Services;
 
-public static class DependencyInjection
+namespace MiniTicker.Infrastructure.Persistence
 {
-    public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static class DependencyInjection
     {
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+        public static IServiceCollection AddInfrastructure(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            // DbContext
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(
+                    configuration.GetConnectionString("DefaultConnection")));
 
-        services.AddScoped<IAreaRepository, AreaRepository>();
-        services.AddScoped<ITicketRepository, TicketRepository>();
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<ITipoSolicitudRepository, TipoSolicitudRepository>();
-        services.AddScoped<IComentarioRepository, ComentarioRepository>();
+            // =========================
+            // Repositories
+            // =========================
+            services.AddScoped<IAreaRepository, AreaRepository>();
+            services.AddScoped<ITicketRepository, TicketRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<ITipoSolicitudRepository, TipoSolicitudRepository>();
+            services.AddScoped<IComentarioRepository, ComentarioRepository>();
 
-        services.AddScoped<IJwtTokenService, JwtTokenService>();
-        services.AddScoped<IFileStorageService, FileStorageService>();
+            // =========================
+            // Application Services
+            // =========================
+            services.AddScoped<IAreaService, AreaService>();
+            services.AddScoped<ITicketService, TicketService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ITipoSolicitudService, TipoSolicitudService>();
+            services.AddScoped<IAuthService, AuthService>();
 
-        return services;
+            // =========================
+            // Technical Services
+            // =========================
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
+            services.AddScoped<Core.Application.Interfaces.Services.IFileStorageService, FileStorageService>();
+
+            return services;
+        }
     }
 }
