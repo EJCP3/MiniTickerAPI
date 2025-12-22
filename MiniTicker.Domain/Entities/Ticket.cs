@@ -15,7 +15,7 @@ namespace MiniTicker.Core.Domain.Entities
         public Guid SolicitanteId { get; set; }
         public Guid? GestorAsignadoId { get; set; }
         public string? ArchivoAdjuntoUrl { get; set; }
-        public DateTime FechaCreacion { get; set; }
+        //public DateTime FechaCreacion { get; set; }
         public DateTime? FechaActualizacion { get; set; }
     }
 }

@@ -6,3 +6,4 @@ namespace MiniTicker.Core.Application.Catalogs
         public string Nombre { get; set; } = null!;
         public bool Activo { get; set; }
     }
+}

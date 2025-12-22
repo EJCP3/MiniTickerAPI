@@ -1,5 +1,5 @@
+using MiniTicker.Core.Application.Auth;
 using System.Threading.Tasks;
-using MiniTicker.Core.Application.DTOs.Auth;
 
 namespace MiniTicker.Core.Application.Interfaces.Services
 {
