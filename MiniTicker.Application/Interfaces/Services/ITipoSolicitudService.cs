@@ -42,5 +42,7 @@ namespace MiniTicker.Core.Application.Interfaces.Services
         /// Desactiva un tipo de solicitud.
         /// </summary>
         Task DeactivateAsync(Guid tipoSolicitudId, CancellationToken cancellationToken = default);
+        Task GetByAreaIdAsync(Guid areaId);
+        Task DeleteAsync(Guid id);
     }
 }
