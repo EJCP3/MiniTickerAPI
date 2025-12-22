@@ -1,7 +1,8 @@
-## .NET
+# .NET
 bin/
 obj/
+
+# Visual Studio
+.vs/
 *.user
 *.suo
-*.cache
-*.log
