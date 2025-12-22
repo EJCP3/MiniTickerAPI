@@ -1,4 +1,4 @@
-# .NET
+# Build
 bin/
 obj/
 
@@ -6,3 +6,11 @@ obj/
 .vs/
 *.user
 *.suo
+*.cache
+
+# Rider
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
