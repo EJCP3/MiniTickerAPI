@@ -105,5 +105,45 @@ namespace MiniTicker.Core.Application.Services
             };
 
         #endregion
+        public async Task<IReadOnlyList<TipoSolicitudDto>> GetByAreaIdAsync(
+    Guid areaId,
+    CancellationToken cancellationToken = default)
+        {
+            var entities = await _repository
+                .GetByAreaIdAsync(areaId)
+                .ConfigureAwait(false);
+
+            return entities.Select(MapToDto).ToList();
+        }
+
+        public async Task DeleteAsync(
+            Guid tipoSolicitudId,
+            CancellationToken cancellationToken = default)
+        {
+            var existing = await _repository
+                .GetByIdAsync(tipoSolicitudId)
+                .ConfigureAwait(false);
+
+            if (existing == null)
+                throw new KeyNotFoundException(
+                    $"TipoSolicitud con id '{tipoSolicitudId}' no encontrada.");
+
+            await _repository.DeleteAsync(existing)
+                .ConfigureAwait(false);
+        }
+
+        // Implementación explícita para cumplir con la interfaz ITipoSolicitudService
+        async Task ITipoSolicitudService.GetByAreaIdAsync(Guid areaId)
+        {
+            await GetByAreaIdAsync(areaId);
+        }
+
+        async Task ITipoSolicitudService.DeleteAsync(Guid id)
+        {
+            await DeleteAsync(id);
+        }
     }
+
+
+
 }
