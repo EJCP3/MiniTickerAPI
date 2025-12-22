@@ -51,6 +51,28 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
                 .ConfigureAwait(false);
         }
 
+        public async Task<int> GetNextSequenceForYearAsync(int year)
+        {
+            var prefix = $"SOL-{year}-";
+
+            var lastNumero = await _context.Tickets
+                .AsNoTracking()
+                .Where(t => t.Numero.StartsWith(prefix))
+                .OrderByDescending(t => t.Numero)
+                .Select(t => t.Numero)
+                .FirstOrDefaultAsync()
+                .ConfigureAwait(false);
+
+            if (lastNumero == null)
+                return 1;
+
+            var sequencePart = lastNumero.Substring(prefix.Length);
+
+            return int.TryParse(sequencePart, out var lastSequence)
+                ? lastSequence + 1
+                : 1;
+        }
+
         public async Task<Ticket?> GetByNumeroAsync(string numero)
         {
             if (string.IsNullOrWhiteSpace(numero)) throw new ArgumentException("El número es obligatorio.", nameof(numero));

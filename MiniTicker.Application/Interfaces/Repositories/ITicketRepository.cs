@@ -16,5 +16,7 @@ namespace MiniTicker.Core.Application.Interfaces.Repositories
         Task<bool> ExistsAsync(Guid ticketId);
         Task<IReadOnlyList<Ticket>> GetAllAsync();
         Task<(IReadOnlyList<Ticket> Tickets, int TotalCount)> GetPagedAsync(TicketFilterDto filter);
+        Task<int> GetNextSequenceForYearAsync(int year);
+
     }
 }
