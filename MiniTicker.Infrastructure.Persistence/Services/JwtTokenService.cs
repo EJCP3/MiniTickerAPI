@@ -8,7 +8,7 @@ using MiniTicker.Core.Domain.Entities;
 
 namespace MiniTicker.Infrastructure.Persistence.Services
 {
-    internal class JwtTokenService : IJwtTokenService
+    public class JwtTokenService : IJwtTokenService
     {
         private readonly IConfiguration _configuration;
 
@@ -19,25 +19,35 @@ namespace MiniTicker.Infrastructure.Persistence.Services
 
         public string GenerateToken(Usuario usuario)
         {
-            var key = _configuration["Jwt:Key"]!;
+            var key = _configuration["Jwt:Key"]
+                ?? throw new InvalidOperationException("JWT Key not configured");
+
             var issuer = _configuration["Jwt:Issuer"];
             var audience = _configuration["Jwt:Audience"];
+            var duration = int.Parse(_configuration["Jwt:DurationInMinutes"]!);
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, usuario.Id.ToString()),
-                new Claim(ClaimTypes.Email, usuario.Email),
-                new Claim(ClaimTypes.Role, usuario.Rol.ToString())
+                new Claim(JwtRegisteredClaimNames.Email, usuario.Email),
+                new Claim(ClaimTypes.Role, usuario.Rol.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            var securityKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(key)
+            );
+
+            var credentials = new SigningCredentials(
+                securityKey,
+                SecurityAlgorithms.HmacSha256
+            );
 
             var token = new JwtSecurityToken(
-                issuer,
-                audience,
-                claims,
-                expires: DateTime.UtcNow.AddHours(2),
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(duration),
                 signingCredentials: credentials
             );
 

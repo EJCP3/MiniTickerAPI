@@ -43,6 +43,7 @@ namespace MiniTicker.Infrastructure.Persistence
             // =========================
             services.AddScoped<IJwtTokenService, JwtTokenService>();
             services.AddScoped<Core.Application.Interfaces.Services.IFileStorageService, FileStorageService>();
+            services.AddScoped<IJwtTokenService, JwtTokenService>();
 
             return services;
         }
