@@ -1,10 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using AutoMapper;
+using MiniTicker.Core.Domain.Entities;
+using MiniTicker.Core.Application.Catalogs;
 
 namespace MiniTicker.Core.Application.Mappings
 {
-    internal class TipoSolicitudProfile
+    public class TipoSolicitudProfile : Profile
     {
+        public TipoSolicitudProfile()
+        {
+            // TipoSolicitud -> TipoSolicitudDto
+            CreateMap<TipoSolicitud, TipoSolicitudDto>();
+        }
     }
 }
