@@ -1,5 +1,7 @@
 <Solution>
-  <Folder Name="/source/" />
+  <Folder Name="/source/">
+    <File Path="global.json" />
+  </Folder>
   <Folder Name="/source/Core/">
     <Project Path="MiniTicker.Application/MiniTicker.Core.Application.csproj" Id="afac20c0-afb8-47a1-ac7d-f27075245148" />
     <Project Path="MiniTicker.Domain/MiniTicker.Core.Domain.csproj" Id="1de16a71-7393-44ef-a74a-afb42ca01bce" />

@@ -109,6 +109,7 @@ namespace MiniTicker.Infrastructure.Persistence
             entity.Property(e => e.FotoPerfilUrl)
                   .HasMaxLength(500);
 
+            entity.HasIndex(e => e.Email).IsUnique();
             //entity.Property<DateTime>("FechaCreacion").IsRequired();
             //entity.Property<DateTime?>("FechaModificacion");
         }
