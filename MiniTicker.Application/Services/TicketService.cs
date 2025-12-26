@@ -19,6 +19,7 @@ namespace MiniTicker.Core.Application.Services
         private readonly IComentarioRepository _comentarioRepository;
         private readonly IUserRepository _userRepository;
         private readonly IFileStorageService _fileStorageService;
+        private readonly ITicketEventRepository _ticketEventRepository;
 
         public TicketService(
             ITicketRepository ticketRepository,
@@ -26,7 +27,8 @@ namespace MiniTicker.Core.Application.Services
             ITipoSolicitudRepository tipoSolicitudRepository,
             IComentarioRepository comentarioRepository,
             IUserRepository userRepository,
-            IFileStorageService fileStorageService)
+            IFileStorageService fileStorageService,
+            ITicketEventRepository ticketEventRepository)
         {
             _ticketRepository = ticketRepository;
             _areaRepository = areaRepository;
@@ -34,23 +36,26 @@ namespace MiniTicker.Core.Application.Services
             _comentarioRepository = comentarioRepository;
             _userRepository = userRepository;
             _fileStorageService = fileStorageService;
+            _ticketEventRepository = ticketEventRepository;
         }
 
         // =====================================================
         // CREATE
         // =====================================================
-        public async Task<TicketDto> CreateAsync(CreateTicketDto dto, Guid userId)
+        public async Task<TicketDto> CreateAsync(
+            CreateTicketDto dto,
+            Guid userId,
+            CancellationToken cancellationToken = default)
         {
-            var area = await _areaRepository.GetByIdAsync(dto.AreaId)
+            _ = await _areaRepository.GetByIdAsync(dto.AreaId)
                 ?? throw new KeyNotFoundException("Área no encontrada.");
 
-            var tipo = await _tipoSolicitudRepository.GetByIdAsync(dto.TipoSolicitudId)
+            _ = await _tipoSolicitudRepository.GetByIdAsync(dto.TipoSolicitudId)
                 ?? throw new KeyNotFoundException("Tipo de solicitud no encontrado.");
 
             var year = DateTime.UtcNow.Year;
-            var (tickets, totalCount) = await _ticketRepository.GetPagedAsync(new TicketFilterDto { /* parámetros necesarios */ });
-            int sequence = totalCount + 1; // O ajusta la lógica según cómo determines el siguiente número de secuencia
-            var numero = $"SOL-{year}-{sequence:0000}";
+            var (_, totalCount) = await _ticketRepository.GetPagedAsync(new TicketFilterDto());
+            var numero = $"SOL-{year}-{totalCount + 1:0000}";
 
             string? archivoUrl = null;
             if (dto.ArchivoAdjunto != null)
@@ -75,13 +80,25 @@ namespace MiniTicker.Core.Application.Services
 
             await _ticketRepository.AddAsync(ticket);
 
+            await _ticketEventRepository.AddAsync(new TicketEvent
+            {
+                Id = Guid.NewGuid(),
+                TicketId = ticket.Id,
+                UsuarioId = userId,
+                TipoEvento = TicketEventType.Creado,
+                Fecha = DateTime.UtcNow
+            }, cancellationToken);
+
             return await MapToTicketDtoAsync(ticket);
         }
 
         // =====================================================
         // UPDATE
         // =====================================================
-        public async Task<TicketDto> UpdateAsync(Guid ticketId, UpdateTicketDto dto)
+        public async Task<TicketDto> UpdateAsync(
+            Guid ticketId,
+            UpdateTicketDto dto,
+            CancellationToken cancellationToken = default)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId)
                 ?? throw new KeyNotFoundException("Ticket no encontrado.");
@@ -102,10 +119,16 @@ namespace MiniTicker.Core.Application.Services
         // =====================================================
         // CHANGE STATUS
         // =====================================================
-        public async Task<TicketDto> ChangeStatusAsync(Guid ticketId, ChangeTicketStatusDto dto, Guid userId)
+        public async Task<TicketDto> ChangeStatusAsync(
+            Guid ticketId,
+            ChangeTicketStatusDto dto,
+            Guid userId,
+            CancellationToken cancellationToken = default)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId)
                 ?? throw new KeyNotFoundException("Ticket no encontrado.");
+
+            var estadoAnterior = ticket.Estado;
 
             if (dto.Estado == EstadoTicket.Rechazada && string.IsNullOrWhiteSpace(dto.Motivo))
                 throw new InvalidOperationException("Debe indicar el motivo del rechazo.");
@@ -124,6 +147,7 @@ namespace MiniTicker.Core.Application.Services
 
             await _ticketRepository.UpdateAsync(ticket);
 
+            // Comentario (si aplica)
             if (!string.IsNullOrWhiteSpace(dto.Motivo))
             {
                 await _comentarioRepository.AddAsync(new Comentario
@@ -133,8 +157,20 @@ namespace MiniTicker.Core.Application.Services
                     UsuarioId = userId,
                     Texto = dto.Motivo,
                     Fecha = DateTime.UtcNow
-                });
+                }, cancellationToken);
             }
+
+            // Evento historial
+            await _ticketEventRepository.AddAsync(new TicketEvent
+            {
+                Id = Guid.NewGuid(),
+                TicketId = ticket.Id,
+                UsuarioId = userId,
+                TipoEvento = TicketEventType.CambioEstado,
+                EstadoAnterior = estadoAnterior,
+                EstadoNuevo = dto.Estado,
+                Fecha = DateTime.UtcNow
+            }, cancellationToken);
 
             return await MapToTicketDtoAsync(ticket);
         }
@@ -142,7 +178,10 @@ namespace MiniTicker.Core.Application.Services
         // =====================================================
         // ASSIGN MANAGER
         // =====================================================
-        public async Task AssignManagerAsync(Guid ticketId, AssignTicketDto dto)
+        public async Task AssignManagerAsync(
+            Guid ticketId,
+            AssignTicketDto dto,
+            CancellationToken cancellationToken = default)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId)
                 ?? throw new KeyNotFoundException("Ticket no encontrado.");
@@ -151,12 +190,23 @@ namespace MiniTicker.Core.Application.Services
             ticket.FechaActualizacion = DateTime.UtcNow;
 
             await _ticketRepository.UpdateAsync(ticket);
+
+            await _ticketEventRepository.AddAsync(new TicketEvent
+            {
+                Id = Guid.NewGuid(),
+                TicketId = ticket.Id,
+                UsuarioId = dto.GestorId,
+                TipoEvento = TicketEventType.CambioEstado,
+                Fecha = DateTime.UtcNow
+            }, cancellationToken);
         }
 
         // =====================================================
         // PAGED LIST
         // =====================================================
-        public async Task<PagedResultDto<TicketDto>> GetPagedAsync(TicketFilterDto filter)
+        public async Task<PagedResultDto<TicketDto>> GetPagedAsync(
+            TicketFilterDto filter,
+            CancellationToken cancellationToken = default)
         {
             var (tickets, total) = await _ticketRepository.GetPagedAsync(filter);
 
@@ -178,7 +228,9 @@ namespace MiniTicker.Core.Application.Services
         // =====================================================
         // DETAIL
         // =====================================================
-        public async Task<TicketDetailDto?> GetByIdAsync(Guid ticketId)
+        public async Task<TicketDetailDto?> GetByIdAsync(
+            Guid ticketId,
+            CancellationToken cancellationToken = default)
         {
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
             if (ticket == null) return null;
@@ -190,15 +242,16 @@ namespace MiniTicker.Core.Application.Services
                 ? await _userRepository.GetByIdAsync(ticket.GestorAsignadoId.Value)
                 : null;
 
-            var comentarios = await _comentarioRepository.GetByTicketIdOrderedByFechaAscAsync(ticket.Id);
+            var comentarios = await _comentarioRepository
+                .GetByTicketIdOrderedByFechaAscAsync(ticket.Id);
 
             return new TicketDetailDto
             {
                 Numero = ticket.Numero,
                 Asunto = ticket.Asunto,
                 Descripcion = ticket.Descripcion,
-                Estado = ticket.Estado.ToString(), // <-- FIX: conversión explícita a string
-                Prioridad = ticket.Prioridad.ToString(), // <-- FIX: conversión explícita a string
+                Estado = ticket.Estado.ToString(),
+                Prioridad = ticket.Prioridad.ToString(),
                 Area = MapArea(area),
                 TipoSolicitud = MapTipo(tipo),
                 Solicitante = MapUser(solicitante),
@@ -226,20 +279,20 @@ namespace MiniTicker.Core.Application.Services
                 Id = ticket.Id,
                 Numero = ticket.Numero,
                 Asunto = ticket.Asunto,
-                Estado = ticket.Estado.ToString(), // <-- FIX: conversión explícita a string
-                Prioridad = ticket.Prioridad.ToString(), // <-- FIX: conversión explícita a string
+                Estado = ticket.Estado.ToString(),
+                Prioridad = ticket.Prioridad.ToString(),
                 Area = MapArea(area),
                 TipoSolicitud = MapTipo(tipo),
                 FechaCreacion = ticket.FechaCreacion
             };
         }
 
-        private static MiniTicker.Core.Application.Catalogs.AreaDto MapArea(Area? area) =>
+        private static Catalogs.AreaDto MapArea(Area? area) =>
             area == null
                 ? new() { Id = Guid.Empty, Nombre = string.Empty }
                 : new() { Id = area.Id, Nombre = area.Nombre, Activo = area.Activo };
 
-        private static MiniTicker.Core.Application.Catalogs.TipoSolicitudDto MapTipo(TipoSolicitud? tipo) =>
+        private static Catalogs.TipoSolicitudDto MapTipo(TipoSolicitud? tipo) =>
             tipo == null
                 ? new() { Id = Guid.Empty, Nombre = string.Empty }
                 : new() { Id = tipo.Id, Nombre = tipo.Nombre, AreaId = tipo.AreaId, Activo = tipo.Activo };
@@ -255,35 +308,5 @@ namespace MiniTicker.Core.Application.Services
                     Rol = user.Rol,
                     FotoPerfilUrl = user.FotoPerfilUrl
                 };
-
-        public Task<TicketDto> CreateAsync(CreateTicketDto dto, Guid userId, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<TicketDto> UpdateAsync(Guid ticketId, UpdateTicketDto dto, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<TicketDto> ChangeStatusAsync(Guid ticketId, ChangeTicketStatusDto dto, Guid userId, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task AssignManagerAsync(Guid ticketId, AssignTicketDto dto, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<PagedResultDto<TicketDto>> GetPagedAsync(TicketFilterDto filter, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<TicketDetailDto?> GetByIdAsync(Guid ticketId, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

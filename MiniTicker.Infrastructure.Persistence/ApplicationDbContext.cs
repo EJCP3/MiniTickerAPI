@@ -21,9 +21,9 @@ namespace MiniTicker.Infrastructure.Persistence
         public DbSet<TipoSolicitud> TiposSolicitud { get; set; } = null!;
         public DbSet<Ticket> Tickets { get; set; } = null!;
         public DbSet<Comentario> Comentarios { get; set; } = null!;
-
+        public DbSet<TicketEvent> TicketEvents { get; set; } = default!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
+        {   
             // Configuración por entidad usando Fluent API
             ConfigureArea(modelBuilder);
             ConfigureTipoSolicitud(modelBuilder);
