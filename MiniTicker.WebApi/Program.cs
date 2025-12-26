@@ -3,11 +3,11 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.OpenApi;
 
 using MiniTicker.Core.Application;
 using MiniTicker.Infrastructure;
 using MiniTicker.Infrastructure.Persistence;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +16,22 @@ var builder = WebApplication.CreateBuilder(args);
 // ==============================
 
 builder.Services.AddControllers();
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSwagger",
+        policy =>
+        {
+            policy
+                .AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+
+
+
 
 // Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
@@ -38,7 +54,20 @@ builder.Services.AddSwaggerGen(c =>
         Description = "JWT Authorization header usando el esquema Bearer"
     });
 
-  
+    //c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    //{
+    //    {
+    //        new OpenApiSecurityScheme
+    //        {
+    //            Reference = new OpenApiReference
+    //            {
+    //                Type = ReferenceType.SecurityScheme,
+    //                Id = "Bearer"
+    //            }
+    //        },
+    //        Array.Empty<string>()
+    //    }
+    //});
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -72,11 +101,17 @@ var app = builder.Build();
 // Middleware pipeline
 // ==============================
 
+app.UseCors("AllowSwagger");
+
+
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+
 
 app.UseHttpsRedirection();
 

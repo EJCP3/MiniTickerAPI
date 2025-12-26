@@ -1,14 +1,15 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniTicker.Core.Application.Catalogs;
 using MiniTicker.Core.Application.Interfaces.Services;
+using MiniTicker.Core.Domain.Enums;
+using System;
+using System.Threading.Tasks;
 
 namespace MiniTicker.WebApi.Controllers
 {
     [ApiController]
-    [Authorize]
+    
     [Route("api/catalog")]
     public class CatalogController : ControllerBase
     {
@@ -98,6 +99,21 @@ namespace MiniTicker.WebApi.Controllers
         {
             await _tipoService.DeleteAsync(id).ConfigureAwait(false);
             return NoContent();
+        }
+
+          [HttpGet("prioridades")]
+        public IActionResult GetPrioridades()
+        {
+            var items = Enum.GetValues(typeof(Prioridad))
+                .Cast<Prioridad>()
+                .Select(p => new
+                {
+                    Id = (int)p,
+                    Nombre = p.ToString()
+                })
+                .ToList();
+
+            return Ok(items);
         }
     }
 }

@@ -3,7 +3,7 @@ using MiniTicker.Core.Application.Interfaces.Services;
 
 namespace MiniTicker.Infrastructure.Persistence.Services
 {
-    internal class FileStorageService : IFileStorageService
+    public class FileStorageService : IFileStorageService
     {
         public async Task<string> UploadAsync(IFormFile file, string folder)
         {

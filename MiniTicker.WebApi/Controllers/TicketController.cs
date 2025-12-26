@@ -10,7 +10,7 @@ using MiniTicker.Core.Application.Read;
 namespace MiniTicker.WebApi.Controllers
 {
     [ApiController]
-    [Authorize]
+  
     [Route("api/tickets")]
     public class TicketController : ControllerBase
     {
