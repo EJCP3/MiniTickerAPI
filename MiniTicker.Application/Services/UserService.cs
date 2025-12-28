@@ -16,11 +16,16 @@ namespace MiniTicker.Core.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IFileStorageService _fileStorageService;
+        private readonly IPasswordHasher _passwordHasher;
 
-        public UserService(IUserRepository userRepository, IFileStorageService fileStorageService)
+        public UserService(
+            IUserRepository userRepository,
+            IFileStorageService fileStorageService,
+            IPasswordHasher passwordHasher)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _fileStorageService = fileStorageService ?? throw new ArgumentNullException(nameof(fileStorageService));
+            _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
         }
 
         public async Task<UserDto?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -95,35 +100,39 @@ namespace MiniTicker.Core.Application.Services
             if (dto == null) throw new ArgumentNullException(nameof(dto));
             if (string.IsNullOrWhiteSpace(dto.Email)) throw new ArgumentException("El email es obligatorio.", nameof(dto.Email));
             if (string.IsNullOrWhiteSpace(dto.Nombre)) throw new ArgumentException("El nombre es obligatorio.", nameof(dto.Nombre));
+            if (string.IsNullOrWhiteSpace(dto.Password)) throw new ArgumentException("La contraseña es obligatoria.", nameof(dto.Password));
 
-            // Verificar duplicados por email
             var existente = await _userRepository.GetByEmailAsync(dto.Email).ConfigureAwait(false);
             if (existente != null)
                 throw new InvalidOperationException($"Ya existe un usuario con el email '{dto.Email}'.");
 
-            // Subida opcional de foto
+            // Subida de foto
             string? fotoUrl = null;
             if (dto.FotoPerfil != null)
             {
+                // Esto ya funcionaba, solo faltaba usar el resultado
                 fotoUrl = await _fileStorageService.UploadAsync(dto.FotoPerfil, "usuarios").ConfigureAwait(false);
             }
 
-            var usuario = new Usuario
+            var passwordHash = _passwordHasher.Hash(dto.Password);
+
+            var user = new Usuario
             {
                 Id = Guid.NewGuid(),
                 Nombre = dto.Nombre,
                 Email = dto.Email,
+                PasswordHash = passwordHash,
                 Rol = dto.Rol,
-                AreaId = dto.AreaId,
                 Activo = dto.Activo,
-                FotoPerfilUrl = fotoUrl,
-                FechaCreacion = DateTime.UtcNow,
-                FechaModificacion = null
+                AreaId = dto.AreaId,
+
+                // ✅ AGREGA ESTA LÍNEA:
+                FotoPerfilUrl = fotoUrl
             };
 
-            await _userRepository.AddAsync(usuario).ConfigureAwait(false);
+            await _userRepository.AddAsync(user).ConfigureAwait(false);
 
-            return MapToDto(usuario);
+            return MapToDto(user);
         }
 
         #region Helpers

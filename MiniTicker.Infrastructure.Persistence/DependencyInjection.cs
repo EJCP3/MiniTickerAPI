@@ -44,6 +44,8 @@ namespace MiniTicker.Infrastructure.Persistence
             services.AddScoped<IJwtTokenService, JwtTokenService>();
             services.AddScoped<IFileStorageService, FileStorageService>();
             services.AddScoped<ITicketEventRepository, TicketEventRepository>();
+            services.AddScoped<IPasswordHasher, PasswordHasher>();
+
             return services;    
         }
     }

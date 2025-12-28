@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "MiniTicker.Core.Application": {
+      "commandName": "Project"
+    }
+  }
+}

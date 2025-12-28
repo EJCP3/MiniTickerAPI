@@ -1,16 +1,21 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-
 using Microsoft.AspNetCore.Builder;
-
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 using MiniTicker.Core.Application;
 using MiniTicker.Infrastructure;
 using MiniTicker.Infrastructure.Persistence;
-using Microsoft.OpenApi;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json.Serialization;
+
 
 var builder = WebApplication.CreateBuilder(args);
-
+// Limpia el mapeo por defecto para no remapear 'sub' a 'nameidentifier'
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
 // ==============================
 // Add services to the container
 // ==============================
@@ -31,19 +36,21 @@ builder.Services.AddCors(options =>
 });
 
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // ESTA LÍNEA ES LA MAGIA QUE EVITA EL CIERRE (CRASH):
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
 
 
 // Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "MiniTicker API",
-        Version = "v1"
-    });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "MiniTicker API", Version = "v1" });
 
-    // JWT support
+    // Definición del header de seguridad
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -51,42 +58,61 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "JWT Authorization header usando el esquema Bearer"
+        Description = "Ingrese el token JWT."
     });
 
-    //c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    //{
-    //    {
-    //        new OpenApiSecurityScheme
-    //        {
-    //            Reference = new OpenApiReference
-    //            {
-    //                Type = ReferenceType.SecurityScheme,
-    //                Id = "Bearer"
-    //            }
-    //        },
-    //        Array.Empty<string>()
-    //    }
-    //});
+    // Requerimiento de seguridad (El que te faltaba antes)
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
 });
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+// El resto del código de autenticación y configuración debe ir después de AddSwaggerGen
+var signingKey = builder.Configuration.GetValue<string>("Jwt:Key");
+if (string.IsNullOrWhiteSpace(signingKey))
+    throw new InvalidOperationException("Falta la configuración 'Jwt:Key'.");
+
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
     .AddJwtBearer(options =>
     {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"], // Asegúrate que lea del appsettings
+
             ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
+
+            ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
-            )
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
+
+            // IMPORTANTE: Mapear a los nombres cortos que definimos en AuthService
+            NameClaimType = "nombre",
+            RoleClaimType = "role"
         };
     });
-
 // Application & Infrastructure
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -111,7 +137,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
+app.UseStaticFiles();
 
 app.UseHttpsRedirection();
 

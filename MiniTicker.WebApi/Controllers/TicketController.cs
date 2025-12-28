@@ -1,13 +1,14 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MiniTicker.Core.Application.Filters;
-using MiniTicker.Core.Application.Interfaces.Services;
 using MiniTicker.Core.Application.Interfaces.Repositories;
-using MiniTicker.Core.Application.Tickets;
+using MiniTicker.Core.Application.Interfaces.Services;
 using MiniTicker.Core.Application.Read;
+using MiniTicker.Core.Application.Tickets;
+using System;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiniTicker.WebApi.Controllers
 {
@@ -29,16 +30,46 @@ namespace MiniTicker.WebApi.Controllers
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }
 
+        private bool TryGetUserId(out Guid userId)
+        {
+            userId = default;
+
+            // 1. Busca el claim "sub" (lo que configuramos)
+            var claimValue = User.FindFirst("sub")?.Value;
+
+            // 2. Si no lo encuentra, busca el "NameIdentifier" (el nombre largo por defecto de Microsoft)
+            if (string.IsNullOrEmpty(claimValue))
+            {
+                claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            }
+
+            // 3. Si tampoco, busca por "id" (por si acaso)
+            if (string.IsNullOrEmpty(claimValue))
+            {
+                claimValue = User.FindFirst("id")?.Value;
+            }
+
+            // Validamos que sea un Guid válido
+            return !string.IsNullOrEmpty(claimValue) && Guid.TryParse(claimValue, out userId);
+        }
+
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> Create([FromForm] CreateTicketDto dto, CancellationToken cancellationToken)
         {
-            if (dto == null) return BadRequest();
+            // Usamos el método robusto
+            if (!TryGetUserId(out var userId))
+            {
+                // TRUCO DE DEBUG:
+                // Si falla, devolvemos la lista de lo que SÍ llegó para que veas qué está pasando
+                var claimsLlegaron = string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}"));
+                return Unauthorized($"No se pudo identificar el usuario. Claims recibidos: {claimsLlegaron}");
+            }
 
-            var userId = Guid.Parse(User.FindFirst("sub")!.Value);
-            var created = await _ticketService.CreateAsync(dto, userId, cancellationToken).ConfigureAwait(false);
-
-            return CreatedAtAction(nameof(GetById), new { ticketId = created.Id }, created);
+            var created = await _ticketService.CreateAsync(dto, userId, cancellationToken);
+            return Ok(created);
         }
+
 
         [HttpGet]
         public async Task<IActionResult> GetPaged([FromQuery] TicketFilterDto filter, CancellationToken cancellationToken)

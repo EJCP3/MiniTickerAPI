@@ -13,38 +13,42 @@ namespace MiniTicker.Core.Application.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IPasswordHasher _passwordHasher;
         private readonly IConfiguration _configuration;
 
-        public AuthService(IUserRepository userRepository, IConfiguration configuration)
+        public AuthService(
+            IUserRepository userRepository,
+            IPasswordHasher passwordHasher,
+            IConfiguration configuration)
         {
-            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _userRepository = userRepository
+                ?? throw new ArgumentNullException(nameof(userRepository));
+            _passwordHasher = passwordHasher
+                ?? throw new ArgumentNullException(nameof(passwordHasher));
+            _configuration = configuration
+                ?? throw new ArgumentNullException(nameof(configuration));
         }
 
+        // =====================================================
+        // LOGIN
+        // =====================================================
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto dto)
         {
-            if (dto == null) throw new ArgumentNullException(nameof(dto));
-            if (string.IsNullOrWhiteSpace(dto.Email))
-                throw new ArgumentException("Email requerido.", nameof(dto));
-            if (string.IsNullOrWhiteSpace(dto.Password))
-                throw new ArgumentException("Password requerido.", nameof(dto));
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
+
+            if (string.IsNullOrWhiteSpace(dto.Email) ||
+                string.IsNullOrWhiteSpace(dto.Password))
+                throw new ArgumentException("Email y contraseña son requeridos.");
 
             var usuario = await _userRepository.GetByEmailAsync(dto.Email);
+
             if (usuario == null || !usuario.Activo)
                 throw new UnauthorizedAccessException("Credenciales inválidas.");
 
-            // ⚠️ TEMPORAL: comparación simple
-            // En producción: usar PasswordHash + BCrypt
-            var passwordProp =
-                usuario.GetType().GetProperty("PasswordHash") ??
-                usuario.GetType().GetProperty("Password");
-
-            if (passwordProp != null)
-            {
-                var stored = passwordProp.GetValue(usuario) as string;
-                if (string.IsNullOrEmpty(stored) || stored != dto.Password)
-                    throw new UnauthorizedAccessException("Credenciales inválidas.");
-            }
+            // ✅ Verificación segura con BCrypt
+            if (!_passwordHasher.Verify(dto.Password, usuario.PasswordHash))
+                throw new UnauthorizedAccessException("Credenciales inválidas.");
 
             var token = GenerateJwtToken(usuario);
 
@@ -72,13 +76,16 @@ namespace MiniTicker.Core.Application.Services
             ) ? minutes : 60;
 
             var claims = new List<Claim>
-            {
-                new(JwtRegisteredClaimNames.Sub, usuario.Id.ToString()),
-                new(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
-                new(ClaimTypes.Name, usuario.Nombre),
-                new(ClaimTypes.Email, usuario.Email),
-                new(ClaimTypes.Role, usuario.Rol.ToString())
-            };
+{
+    // Usamos estándares JWT: 'sub' es el ID del usuario
+    new Claim(JwtRegisteredClaimNames.Sub, usuario.Id.ToString()),
+    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+    
+    // Claims personalizados con nombres cortos
+    new Claim("email", usuario.Email),
+    new Claim("nombre", usuario.Nombre),
+    new Claim("role", usuario.Rol.ToString())
+};
 
             var securityKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(key)

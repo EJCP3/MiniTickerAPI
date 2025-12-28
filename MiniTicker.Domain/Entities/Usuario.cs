@@ -7,6 +7,9 @@ namespace MiniTicker.Core.Domain.Entities
     {
         public string Nombre { get; set; } = null!;
         public string Email { get; set; } = null!;
+
+        public string PasswordHash { get; set; } = null!; 
+
         public Rol Rol { get; set; }
         public Guid? AreaId { get; set; }
         public bool Activo { get; set; }

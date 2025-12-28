@@ -41,8 +41,9 @@ namespace MiniTicker.WebApi.Controllers
             if (dto == null) return BadRequest("Datos inválidos.");
             if (string.IsNullOrWhiteSpace(dto.Email)) return BadRequest("El email es obligatorio.");
             if (string.IsNullOrWhiteSpace(dto.Nombre)) return BadRequest("El nombre es obligatorio.");
+            if (string.IsNullOrWhiteSpace(dto.Password)) return BadRequest("La contraseña es obligatoria.");
 
-            var created = await _userService.CreateAsync(dto, cancellationToken).ConfigureAwait(false);
+            var created = await _userService.CreateAsync(dto, cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 

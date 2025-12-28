@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MiniTicker.Core.Domain.Domain;
 using MiniTicker.Core.Domain.Entities;
 using MiniTicker.Core.Domain.Enums;
 
@@ -33,6 +34,25 @@ namespace MiniTicker.Infrastructure.Persistence
 
             base.OnModelCreating(modelBuilder);
         }
+
+        public override async Task<int> SaveChangesAsync(
+      CancellationToken cancellationToken = default)
+        {
+            foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    entry.Entity.FechaCreacion = DateTime.UtcNow;
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    entry.Entity.FechaModificacion = DateTime.UtcNow;
+                }
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+
 
         #region Entity configurations
 
@@ -97,6 +117,10 @@ namespace MiniTicker.Infrastructure.Persistence
                   .IsRequired()
                   .HasMaxLength(256);
 
+            entity.Property(e => e.PasswordHash)
+             .IsRequired()
+                 .HasMaxLength(200);
+
             // Guardar el enum Rol como string para mayor legibilidad en DB
             entity.Property(e => e.Rol)
                   .IsRequired()
@@ -130,6 +154,9 @@ namespace MiniTicker.Infrastructure.Persistence
             entity.Property(e => e.Asunto)
                   .IsRequired()
                   .HasMaxLength(250);
+
+            entity.HasIndex(e => e.Estado);
+            entity.HasIndex(e => e.Prioridad);
 
             entity.Property(e => e.Descripcion)
                   .IsRequired()
