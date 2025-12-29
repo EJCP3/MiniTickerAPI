@@ -16,6 +16,7 @@ namespace MiniTicker.WebApi.Controllers
 {
     [ApiController]
     [Route("api/tickets")]
+    [Authorize] 
     public class TicketController : ControllerBase
     {
         private readonly ITicketService _ticketService;
@@ -35,35 +36,28 @@ namespace MiniTicker.WebApi.Controllers
         private bool TryGetUserId(out Guid userId)
         {
             userId = default;
-
-            // 1. Busca el claim "sub" (lo que configuramos)
             var claimValue = User.FindFirst("sub")?.Value;
 
-            // 2. Si no lo encuentra, busca el "NameIdentifier" (el nombre largo por defecto de Microsoft)
             if (string.IsNullOrEmpty(claimValue))
-            {
                 claimValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            }
 
-            // 3. Si tampoco, busca por "id" (por si acaso)
             if (string.IsNullOrEmpty(claimValue))
-            {
                 claimValue = User.FindFirst("id")?.Value;
-            }
 
-            // Validamos que sea un Guid válido
             return !string.IsNullOrEmpty(claimValue) && Guid.TryParse(claimValue, out userId);
         }
 
+        // ============================================================
+        // CREACIÓN
+        // ============================================================
+
+        // Permitimos a todos los roles autenticados crear tickets.
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> Create([FromForm] CreateTicketDto dto, CancellationToken cancellationToken)
         {
-            // Usamos el método robusto
             if (!TryGetUserId(out var userId))
             {
-                // TRUCO DE DEBUG:
-                // Si falla, devolvemos la lista de lo que SÍ llegó para que veas qué está pasando
                 var claimsLlegaron = string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}"));
                 return Unauthorized($"No se pudo identificar el usuario. Claims recibidos: {claimsLlegaron}");
             }
@@ -72,8 +66,13 @@ namespace MiniTicker.WebApi.Controllers
             return Ok(created);
         }
 
+        // ============================================================
+        // LECTURA (LISTADO Y DETALLE)
+        // ============================================================
+
 
         [HttpGet]
+        [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetPaged([FromQuery] TicketFilterDto filter, CancellationToken cancellationToken)
         {
             var result = await _ticketService.GetPagedAsync(filter, cancellationToken).ConfigureAwait(false);
@@ -81,6 +80,7 @@ namespace MiniTicker.WebApi.Controllers
         }
 
         [HttpGet("{ticketId:guid}")]
+        [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetById(Guid ticketId, CancellationToken cancellationToken)
         {
             var detail = await _ticketService.GetByIdAsync(ticketId, cancellationToken).ConfigureAwait(false);
@@ -88,7 +88,12 @@ namespace MiniTicker.WebApi.Controllers
             return Ok(detail);
         }
 
+        // ============================================================
+        // EDICIÓN Y GESTIÓN
+        // ============================================================
+
         [HttpPut("{ticketId:guid}")]
+        [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> Update(Guid ticketId, [FromForm] UpdateTicketDto dto, CancellationToken cancellationToken)
         {
             if (dto == null) return BadRequest();
@@ -98,12 +103,11 @@ namespace MiniTicker.WebApi.Controllers
         }
 
         [HttpPatch("{ticketId:guid}/status")]
+        [Authorize(Roles = "Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> ChangeStatus(Guid ticketId, [FromBody] ChangeTicketStatusDto dto, CancellationToken cancellationToken)
         {
             if (!TryGetUserId(out var userId))
             {
-                // TRUCO DE DEBUG:
-                // Si falla, devolvemos la lista de lo que SÍ llegó para que veas qué está pasando
                 var claimsLlegaron = string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}"));
                 return Unauthorized($"No se pudo identificar el usuario. Claims recibidos: {claimsLlegaron}");
             }
@@ -111,8 +115,9 @@ namespace MiniTicker.WebApi.Controllers
             return Ok(updated);
         }
 
+
         [HttpPatch("{ticketId:guid}/assign")]
-        [Authorize(Roles = "Admin,SuperAdmin")]
+        [Authorize(Roles = "Admin,SuperAdmin,Gestor")]
         public async Task<IActionResult> Assign(Guid ticketId, [FromBody] AssignTicketDto dto, CancellationToken cancellationToken)
         {
             if (dto == null) return BadRequest();
@@ -121,17 +126,20 @@ namespace MiniTicker.WebApi.Controllers
             return NoContent();
         }
 
+        // ============================================================
+        // COMENTARIOS E HISTORIAL
+        // ============================================================
+
         [HttpPost("{ticketId:guid}/comentarios")]
-        [Authorize] // Requiere que el usuario esté logueado
+        [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> AddComment(
-    Guid ticketId,
-    [FromBody] CreateComentarioDto dto,
-    CancellationToken cancellationToken)
+            Guid ticketId,
+            [FromBody] CreateComentarioDto dto,
+            CancellationToken cancellationToken)
         {
             if (dto == null) return BadRequest("Datos inválidos.");
             if (string.IsNullOrWhiteSpace(dto.Texto)) return BadRequest("El comentario no puede estar vacío.");
 
-            // Usamos tu método robusto para obtener el ID del usuario logueado
             if (!TryGetUserId(out var userId))
             {
                 return Unauthorized("No se pudo identificar el usuario.");
@@ -143,11 +151,9 @@ namespace MiniTicker.WebApi.Controllers
         }
 
         [HttpGet("{id:guid}/historial")]
+        [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetHistorial(Guid id, CancellationToken cancellationToken)
-
-
         {
-
             var ticket = await _ticketService.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
             if (ticket == null) return NotFound("El ticket no existe.");
 
@@ -196,33 +202,14 @@ namespace MiniTicker.WebApi.Controllers
                         break;
                     case Core.Domain.Enums.TicketEventType.Asignado:
                         dto.Titulo = "Gestor Asignado";
-                        // Como guardamos el ID del gestor en el evento, 'autorNombreRol' será el nombre del gestor
                         dto.Subtitulo = $"Gestor responsable: {autorNombreRol}";
                         dto.Descripcion = "El ticket ha sido asignado a un gestor para su atención.";
                         break;
                 }
-
                 items.Add(dto);
             }
 
             return Ok(items);
         }
-
-        //[HttpGet("check-mis-permisos")]
-        //[Authorize]
-        //public IActionResult CheckPermissions()
-        //{
-        //    var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
-        //    var esSuperAdmin = User.IsInRole("SuperAdmin");
-        //    var esAdmin = User.IsInRole("Admin");
-
-        //    return Ok(new
-        //    {
-        //        Mensaje = "Diagnóstico de permisos",
-        //        EsSuperAdmin = esSuperAdmin,
-        //        EsAdmin = esAdmin,
-        //        MisClaims = claims
-        //    });
-        //}
     }
 }

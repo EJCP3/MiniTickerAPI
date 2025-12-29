@@ -9,7 +9,7 @@ using MiniTicker.Core.Application.Users;
 namespace MiniTicker.WebApi.Controllers
 {
     [ApiController]
-    // [Authorize(Roles = "SuperAdmin")] 
+    [Authorize(Roles = "SuperAdmin")]
     [Route("api/users")]
     public class UserController : ControllerBase
     {

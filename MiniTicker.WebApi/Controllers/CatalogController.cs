@@ -12,6 +12,8 @@ namespace MiniTicker.WebApi.Controllers
 {
     [ApiController]
     [Route("api/catalog")]
+    // Se requiere estar autenticado para cualquier acción
+    [Authorize]
     public class CatalogController : ControllerBase
     {
         private readonly IAreaService _areaService;
@@ -26,15 +28,18 @@ namespace MiniTicker.WebApi.Controllers
         // ============================
         // ÁREAS
         // ============================
+
         [HttpGet("areas")]
+        [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetAreas([FromQuery] bool mostrarInactivos = false, CancellationToken cancellationToken = default)
         {
-            // Ahora llama al único método GetAllAsync de la interfaz
             var items = await _areaService.GetAllAsync(mostrarInactivos, cancellationToken);
             return Ok(items);
         }
 
+        // Escritura: Solo Admin gestiona catálogos.
         [HttpPost("areas")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> CreateArea([FromBody] AreaDto dto)
         {
             if (dto == null) return BadRequest();
@@ -43,6 +48,7 @@ namespace MiniTicker.WebApi.Controllers
         }
 
         [HttpGet("areas/{id:guid}")]
+        [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetAreaById(Guid id)
         {
             var area = await _areaService.GetByIdAsync(id).ConfigureAwait(false);
@@ -51,6 +57,7 @@ namespace MiniTicker.WebApi.Controllers
         }
 
         [HttpPut("areas/{id:guid}")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> UpdateArea(Guid id, [FromBody] AreaDto dto)
         {
             if (dto == null) return BadRequest();
@@ -59,15 +66,15 @@ namespace MiniTicker.WebApi.Controllers
         }
 
         [HttpDelete("areas/{id:guid}")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> DeleteArea(Guid id)
         {
-            // Esto ya funcionará porque lo agregamos a la interfaz en el Paso 1
             await _areaService.DeleteAsync(id).ConfigureAwait(false);
             return NoContent();
         }
 
-        // ARREGLO CS0111: Renombrado a ActivateArea
         [HttpPatch("areas/{id:guid}/activate")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> ActivateArea(Guid id, CancellationToken cancellationToken)
         {
             await _areaService.ActivateAsync(id, cancellationToken);
@@ -77,7 +84,10 @@ namespace MiniTicker.WebApi.Controllers
         // ============================
         // TIPOS DE SOLICITUD
         // ============================
+
+       
         [HttpGet("tipos-solicitud")]
+        [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetTipos(
             [FromQuery] Guid? areaId,
             [FromQuery] bool mostrarInactivos = false,
@@ -87,7 +97,9 @@ namespace MiniTicker.WebApi.Controllers
             return Ok(items);
         }
 
+       
         [HttpPost("tipos-solicitud")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> CreateTipo([FromBody] TipoSolicitudDto dto)
         {
             if (dto == null) return BadRequest();
@@ -96,6 +108,7 @@ namespace MiniTicker.WebApi.Controllers
         }
 
         [HttpPut("tipos-solicitud/{id:guid}")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> UpdateTipo(Guid id, [FromBody] TipoSolicitudDto dto)
         {
             if (dto == null) return BadRequest();
@@ -104,14 +117,15 @@ namespace MiniTicker.WebApi.Controllers
         }
 
         [HttpDelete("tipos-solicitud/{id:guid}")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> DeleteTipo(Guid id)
         {
             await _tipoService.DeleteAsync(id).ConfigureAwait(false);
             return NoContent();
         }
 
-        // ARREGLO CS0111: Renombrado a ActivateTipo
         [HttpPatch("tipos-solicitud/{id:guid}/activate")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> ActivateTipo(Guid id, CancellationToken cancellationToken)
         {
             await _tipoService.ActivateAsync(id, cancellationToken);
@@ -121,7 +135,9 @@ namespace MiniTicker.WebApi.Controllers
         // ============================
         // OTROS
         // ============================
+
         [HttpGet("prioridades")]
+        [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public IActionResult GetPrioridades()
         {
             var items = Enum.GetValues(typeof(Prioridad)).Cast<Prioridad>().Select(p => new { Id = (int)p, Nombre = p.ToString() }).ToList();
