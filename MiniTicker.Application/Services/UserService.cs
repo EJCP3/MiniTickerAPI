@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using MiniTicker.Core.Application.Interfaces.Repositories;
 using MiniTicker.Core.Application.Interfaces.Services;
 using MiniTicker.Core.Application.Users;
@@ -16,137 +15,154 @@ namespace MiniTicker.Core.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IFileStorageService _fileStorageService;
-        private readonly IPasswordHasher _passwordHasher;
 
         public UserService(
             IUserRepository userRepository,
-            IFileStorageService fileStorageService,
-            IPasswordHasher passwordHasher)
+            IFileStorageService fileStorageService)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _fileStorageService = fileStorageService ?? throw new ArgumentNullException(nameof(fileStorageService));
-            _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
         }
 
-        public async Task<UserDto?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
-        {
-            var usuario = await _userRepository.GetByIdAsync(userId).ConfigureAwait(false);
-            if (usuario == null) return null;
-
-            return MapToDto(usuario);
-        }
-
+        // ============================================================
+        // GET ALL
+        // ============================================================
         public async Task<IReadOnlyList<UserDto>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            var users = await _userRepository.GetAllAsync().ConfigureAwait(false);
-            return users.Select(MapToDto).ToList();
+            // Asumiendo que tu repositorio tiene GetAllAsync. Si no, avísame.
+            var users = await _userRepository.GetAllAsync(cancellationToken);
+            return users.Select(MapToUserDto).ToList();
         }
 
-        public async Task<UserDto> UpdateProfileAsync(Guid userId, UpdateUserProfileDto dto, CancellationToken cancellationToken = default)
+        // ============================================================
+        // GET BY ID
+        // ============================================================
+        public async Task<UserDto?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
         {
-            if (dto == null) throw new ArgumentNullException(nameof(dto));
-
-            var usuario = await _userRepository.GetByIdAsync(userId).ConfigureAwait(false);
-            if (usuario == null) throw new KeyNotFoundException($"Usuario con id '{userId}' no encontrado.");
-
-            usuario.Nombre = dto.Nombre ?? usuario.Nombre;
-
-            if (dto.FotoPerfil != null)
-            {
-                var fotoUrl = await _fileStorageService.UploadAsync(dto.FotoPerfil, "usuarios").ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(fotoUrl))
-                {
-                    usuario.FotoPerfilUrl = fotoUrl;
-                }
-            }
-
-            await _userRepository.UpdateAsync(usuario).ConfigureAwait(false);
-
-            return MapToDto(usuario);
+            var user = await _userRepository.GetByIdAsync(userId);
+            return user == null ? null : MapToUserDto(user);
         }
 
-        public async Task<UserDto> ChangeRoleAsync(Guid userId, Rol newRole, CancellationToken cancellationToken = default)
+        public async Task<UserDto?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
         {
-            var usuario = await _userRepository.GetByIdAsync(userId).ConfigureAwait(false);
-            if (usuario == null) throw new KeyNotFoundException($"Usuario con id '{userId}' no encontrado.");
-
-            usuario.Rol = newRole;
-            await _userRepository.UpdateAsync(usuario).ConfigureAwait(false);
-
-            return MapToDto(usuario);
+            var user = await _userRepository.GetByEmailAsync(email);
+            return user == null ? null : MapToUserDto(user);
         }
 
-        public async Task ActivateAsync(Guid userId, CancellationToken cancellationToken = default)
-        {
-            var usuario = await _userRepository.GetByIdAsync(userId).ConfigureAwait(false);
-            if (usuario == null) throw new KeyNotFoundException($"Usuario con id '{userId}' no encontrado.");
-
-            usuario.Activo = true;
-            await _userRepository.UpdateAsync(usuario).ConfigureAwait(false);
-        }
-
-        public async Task DeactivateAsync(Guid userId, CancellationToken cancellationToken = default)
-        {
-            var usuario = await _userRepository.GetByIdAsync(userId).ConfigureAwait(false);
-            if (usuario == null) throw new KeyNotFoundException($"Usuario con id '{userId}' no encontrado.");
-
-            usuario.Activo = false;
-            await _userRepository.UpdateAsync(usuario).ConfigureAwait(false);
-        }
-
-        // Implementación faltante
+        // ============================================================
+        // CREATE
+        // ============================================================
         public async Task<UserDto> CreateAsync(CreateUserDto dto, CancellationToken cancellationToken = default)
         {
             if (dto == null) throw new ArgumentNullException(nameof(dto));
-            if (string.IsNullOrWhiteSpace(dto.Email)) throw new ArgumentException("El email es obligatorio.", nameof(dto.Email));
-            if (string.IsNullOrWhiteSpace(dto.Nombre)) throw new ArgumentException("El nombre es obligatorio.", nameof(dto.Nombre));
-            if (string.IsNullOrWhiteSpace(dto.Password)) throw new ArgumentException("La contraseña es obligatoria.", nameof(dto.Password));
-
-            var existente = await _userRepository.GetByEmailAsync(dto.Email).ConfigureAwait(false);
-            if (existente != null)
-                throw new InvalidOperationException($"Ya existe un usuario con el email '{dto.Email}'.");
-
-            // Subida de foto
-            string? fotoUrl = null;
-            if (dto.FotoPerfil != null)
-            {
-                // Esto ya funcionaba, solo faltaba usar el resultado
-                fotoUrl = await _fileStorageService.UploadAsync(dto.FotoPerfil, "usuarios").ConfigureAwait(false);
-            }
-
-            var passwordHash = _passwordHasher.Hash(dto.Password);
 
             var user = new Usuario
             {
                 Id = Guid.NewGuid(),
                 Nombre = dto.Nombre,
                 Email = dto.Email,
-                PasswordHash = passwordHash,
                 Rol = dto.Rol,
                 Activo = dto.Activo,
-                AreaId = dto.AreaId,
-
-                // ✅ AGREGA ESTA LÍNEA:
-                FotoPerfilUrl = fotoUrl
+                // Hasheamos la contraseña
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                FechaCreacion = DateTime.UtcNow
             };
 
-            await _userRepository.AddAsync(user).ConfigureAwait(false);
+            // Manejo de foto si existe
+            if (dto.FotoPerfil != null)
+            {
+                user.FotoPerfilUrl = await _fileStorageService.UploadAsync(dto.FotoPerfil, "usuarios");
+            }
 
-            return MapToDto(user);
+            await _userRepository.AddAsync(user);
+            return MapToUserDto(user);
         }
 
-        #region Helpers
+        // ============================================================
+        // UPDATE (Perfil y Completo)
+        // ============================================================
+        public async Task<UserDto> UpdateProfileAsync(Guid userId, UpdateUserDto dto, CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.GetByIdAsync(userId) ?? throw new KeyNotFoundException("Usuario no encontrado.");
 
-        private static UserDto MapToDto(Usuario u)
-            => new UserDto
+            user.Nombre = dto.Nombre;
+            if (dto.FotoPerfil != null)
             {
-                Id = u.Id,
-                Nombre = u.Nombre,
-                Email = u.Email,
-                Rol = u.Rol,
-                FotoPerfilUrl = u.FotoPerfilUrl
-            };
+                user.FotoPerfilUrl = await _fileStorageService.UploadAsync(dto.FotoPerfil, "usuarios");
+            }
 
-        #endregion  
+            await _userRepository.UpdateAsync(user);
+            return MapToUserDto(user);
+        }
+
+        public async Task<UserDto> UpdateAsync(Guid userId, UpdateUserDto dto, CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.GetByIdAsync(userId) ?? throw new KeyNotFoundException("Usuario no encontrado.");
+
+            user.Nombre = dto.Nombre;
+            user.Email = dto.Email;
+            user.Rol = dto.Rol;
+            user.AreaId = dto.AreaId;
+            user.Activo = dto.Activo;
+
+            if (!string.IsNullOrWhiteSpace(dto.Password))
+            {
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+            }
+
+            if (dto.FotoPerfil != null)
+            {
+                user.FotoPerfilUrl = await _fileStorageService.UploadAsync(dto.FotoPerfil, "usuarios");
+            }
+
+            await _userRepository.UpdateAsync(user);
+            return MapToUserDto(user);
+        }
+
+        // ============================================================
+        // ACTIVATE / DEACTIVATE
+        // ============================================================
+        public async Task ActivateAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) throw new KeyNotFoundException("Usuario no encontrado.");
+
+            user.Activo = true;
+            await _userRepository.UpdateAsync(user);
+        }
+
+        public async Task DeactivateAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) throw new KeyNotFoundException("Usuario no encontrado.");
+
+            user.Activo = false;
+            await _userRepository.UpdateAsync(user);
+        }
+        public async Task DeleteAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            // 1. Buscamos el usuario
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null) throw new KeyNotFoundException("Usuario no encontrado.");
+
+            // 2. Intentamos borrarlo físicamente
+            // NOTA: Esto lanzará una excepción si el usuario tiene Tickets asociados.
+            await _userRepository.DeleteAsync(user);
+        }
+        // ============================================================
+        // HELPER
+        // ============================================================
+        private static UserDto MapToUserDto(Usuario user)
+        {
+            return new UserDto
+            {
+                Id = user.Id,
+                Nombre = user.Nombre,
+                Email = user.Email,
+                Rol = user.Rol,
+                FotoPerfilUrl = user.FotoPerfilUrl
+                // Agrega AreaId si tu UserDto lo tiene
+            };
+        }
     }
 }

@@ -11,6 +11,7 @@ namespace MiniTicker.Core.Application.Interfaces.Repositories
         Task UpdateAsync(Usuario usuario);
         Task<Usuario?> GetByIdAsync(Guid id);
         Task<Usuario?> GetByEmailAsync(string email);
-        Task<IReadOnlyList<Usuario>> GetAllAsync();
+        Task<IReadOnlyList<Usuario>> GetAllAsync(CancellationToken cancellationToken);
+        Task DeleteAsync(Usuario usuario);
     }
 }

@@ -50,15 +50,52 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
                 .ConfigureAwait(false);
         }
 
+        public async Task<IReadOnlyList<TipoSolicitud>> GetInactivosAsync()
+        {
+            return await _context.TiposSolicitud
+                .AsNoTracking()
+                .Where(t => t.Activo == false) // <--- Solo los inactivos
+                .ToListAsync();
+        }
+
+        public async Task<IReadOnlyList<TipoSolicitud>> GetAllAsync(bool incluirInactivos = false)
+        {
+            var query = _context.TiposSolicitud.AsNoTracking();
+
+            if (incluirInactivos)
+            {
+                query = query.Where(t => t.Activo == false); // Modo Papelera
+            }
+            else
+            {
+                query = query.Where(t => t.Activo == true); // Modo Normal
+            }
+
+            query = query.OrderBy(a => a.Nombre);
+
+            //if (!incluirInactivos)
+            //{
+            //    // Si incluirInactivos es FALSE, filtramos para ver SOLO los activos (true)
+            //    query = query.Where(t => t.Activo == true);
+            //}
+
+            // Si incluirInactivos es TRUE, no filtramos nada y devolvemos todo (activos y borrados)
+
+            return await query.ToListAsync().ConfigureAwait(false);
+        }
         public async Task<IReadOnlyList<TipoSolicitud>> GetByAreaIdAsync(Guid areaId)
         {
-            var list = await _context.TiposSolicitud
+            var query = _context.TiposSolicitud
                 .AsNoTracking()
-                .Where(t => t.AreaId == areaId)
-                .ToListAsync()
-                .ConfigureAwait(false);
+                .Where(t => t.Activo == true); // <--- FILTRO IMPORTANTE: Solo activos
 
-            return list;
+            // Si quieres soportar que Guid.Empty traiga TODAS las áreas:
+            if (areaId != Guid.Empty)
+            {
+                query = query.Where(t => t.AreaId == areaId);
+            }
+
+            return await query.ToListAsync().ConfigureAwait(false);
         }
     }
 }

@@ -11,6 +11,6 @@ namespace MiniTicker.Core.Application.Interfaces.Repositories
         Task UpdateAsync(Area area);
         Task DeleteAsync(Area area);
         Task<Area?> GetByIdAsync(Guid id);
-        Task<IReadOnlyList<Area>> GetAllAsync();
+        Task<IReadOnlyList<Area>> GetAllAsync(bool incluirInactivos = false, CancellationToken cancellationToken = default);
     }
 }

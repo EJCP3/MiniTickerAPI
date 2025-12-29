@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq; // Necesario para Where y OrderBy
+using System.Threading; // Necesario para CancellationToken
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MiniTicker.Infrastructure.Persistence;
@@ -49,14 +51,29 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
                 .ConfigureAwait(false);
         }
 
-        public async Task<IReadOnlyList<Area>> GetAllAsync()
+        // ✅ Corrección CS0535: Agregamos 'CancellationToken cancellationToken = default'
+        public async Task<IReadOnlyList<Area>> GetAllAsync(bool incluirInactivos = false, CancellationToken cancellationToken = default)
         {
-            var list = await _context.Areas
-                .AsNoTracking()
-                .ToListAsync()
-                .ConfigureAwait(false);
+            // 1. Preparamos la consulta base
+            var query = _context.Areas.AsNoTracking();
 
-            return list;
+            // 2. Aplicamos el filtro:
+            // Si NO queremos ver inactivos (!incluirInactivos), filtramos solo los Activos.
+            if (incluirInactivos)
+            {
+                query = query.Where(t => t.Activo == false); // Modo Papelera
+            }
+            else
+            {
+                query = query.Where(t => t.Activo == true); // Modo Normal
+            }
+
+
+            // 3. Ordenamos por nombre para que la lista se vea ordenada
+            query = query.OrderBy(a => a.Nombre);
+
+            // 4. Ejecutamos pasando el token
+            return await query.ToListAsync(cancellationToken).ConfigureAwait(false);
         }
     }
 }

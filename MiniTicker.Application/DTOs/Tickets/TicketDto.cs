@@ -11,6 +11,6 @@ namespace MiniTicker.Core.Application.Read
         public string Prioridad { get; set; } = null!;
         public AreaDto Area { get; set; } = null!;
         public TipoSolicitudDto TipoSolicitud { get; set; } = null!;
-        public DateTime FechaCreacion { get; set; }
+        public string FechaCreacion { get; set; } = null!;
     }
 }

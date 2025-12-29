@@ -1,10 +1,11 @@
-﻿using System;
+﻿using MiniTicker.Core.Application.Comments;
+using MiniTicker.Core.Application.Filters;
+using MiniTicker.Core.Application.Read;
+using MiniTicker.Core.Application.Shared;
+using MiniTicker.Core.Application.Tickets;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using MiniTicker.Core.Application.Read;
-using MiniTicker.Core.Application.Tickets;
-using MiniTicker.Core.Application.Filters;
-using MiniTicker.Core.Application.Shared;
 
 namespace MiniTicker.Core.Application.Interfaces.Services
 {
@@ -44,5 +45,7 @@ namespace MiniTicker.Core.Application.Interfaces.Services
         /// Obtiene el detalle completo de un ticket por su Id.
         /// </summary>
         Task<TicketDetailDto?> GetByIdAsync(Guid ticketId, CancellationToken cancellationToken = default);
+
+        Task<ComentarioDto> AddCommentAsync(  Guid ticketId,  CreateComentarioDto dto,  Guid userId,  CancellationToken cancellationToken = default);
     }
 }

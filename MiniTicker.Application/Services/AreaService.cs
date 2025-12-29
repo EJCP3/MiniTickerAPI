@@ -19,11 +19,13 @@ namespace MiniTicker.Core.Application.Services
             _areaRepository = areaRepository ?? throw new ArgumentNullException(nameof(areaRepository));
         }
 
-        public async Task<IReadOnlyList<AreaDto>> GetAllAsync(CancellationToken cancellationToken = default)
+        // Corrección: Este es el único GetAllAsync que necesitamos
+        public async Task<IReadOnlyList<AreaDto>> GetAllAsync(bool incluirInactivos = false, CancellationToken cancellationToken = default)
         {
-            var areas = await _areaRepository.GetAllAsync().ConfigureAwait(false);
+            // Pasamos el parámetro 'incluirInactivos' al repositorio
+            var entities = await _areaRepository.GetAllAsync(incluirInactivos, cancellationToken);
 
-            return areas.Select(MapToDto).ToList();
+            return entities.Select(MapToDto).ToList();
         }
 
         public async Task<AreaDto?> GetByIdAsync(Guid areaId, CancellationToken cancellationToken = default)
@@ -81,6 +83,22 @@ namespace MiniTicker.Core.Application.Services
             if (existing == null) throw new KeyNotFoundException($"Área con id '{areaId}' no encontrada.");
 
             existing.Activo = false;
+            await _areaRepository.UpdateAsync(existing).ConfigureAwait(false);
+        }
+
+        // ✅ Corrección CS0535: Agregamos la implementación de DeleteAsync
+        public async Task DeleteAsync(Guid areaId, CancellationToken cancellationToken = default)
+        {
+            // 1. Buscamos el registro
+            var existing = await _areaRepository.GetByIdAsync(areaId).ConfigureAwait(false);
+
+            if (existing == null)
+                throw new KeyNotFoundException($"Área con id '{areaId}' no encontrada.");
+
+            // 2. BORRADO LÓGICO (Soft Delete)
+            existing.Activo = false;
+
+            // 3. Guardamos cambios
             await _areaRepository.UpdateAsync(existing).ConfigureAwait(false);
         }
 

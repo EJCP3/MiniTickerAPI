@@ -4,12 +4,13 @@ using MiniTicker.Core.Application.Catalogs;
 using MiniTicker.Core.Application.Interfaces.Services;
 using MiniTicker.Core.Domain.Enums;
 using System;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MiniTicker.WebApi.Controllers
 {
     [ApiController]
-    
     [Route("api/catalog")]
     public class CatalogController : ControllerBase
     {
@@ -26,9 +27,10 @@ namespace MiniTicker.WebApi.Controllers
         // ÁREAS
         // ============================
         [HttpGet("areas")]
-        public async Task<IActionResult> GetAreas()
+        public async Task<IActionResult> GetAreas([FromQuery] bool mostrarInactivos = false, CancellationToken cancellationToken = default)
         {
-            var items = await _areaService.GetAllAsync().ConfigureAwait(false);
+            // Ahora llama al único método GetAllAsync de la interfaz
+            var items = await _areaService.GetAllAsync(mostrarInactivos, cancellationToken);
             return Ok(items);
         }
 
@@ -36,7 +38,6 @@ namespace MiniTicker.WebApi.Controllers
         public async Task<IActionResult> CreateArea([FromBody] AreaDto dto)
         {
             if (dto == null) return BadRequest();
-
             var created = await _areaService.CreateAsync(dto).ConfigureAwait(false);
             return CreatedAtAction(nameof(GetAreaById), new { id = created.Id }, created);
         }
@@ -53,7 +54,6 @@ namespace MiniTicker.WebApi.Controllers
         public async Task<IActionResult> UpdateArea(Guid id, [FromBody] AreaDto dto)
         {
             if (dto == null) return BadRequest();
-
             var updated = await _areaService.UpdateAsync(id, dto).ConfigureAwait(false);
             return Ok(updated);
         }
@@ -61,18 +61,29 @@ namespace MiniTicker.WebApi.Controllers
         [HttpDelete("areas/{id:guid}")]
         public async Task<IActionResult> DeleteArea(Guid id)
         {
-            await _areaService.DeactivateAsync(id).ConfigureAwait(false);
+            // Esto ya funcionará porque lo agregamos a la interfaz en el Paso 1
+            await _areaService.DeleteAsync(id).ConfigureAwait(false);
             return NoContent();
+        }
+
+        // ARREGLO CS0111: Renombrado a ActivateArea
+        [HttpPatch("areas/{id:guid}/activate")]
+        public async Task<IActionResult> ActivateArea(Guid id, CancellationToken cancellationToken)
+        {
+            await _areaService.ActivateAsync(id, cancellationToken);
+            return Ok(new { message = "El área ha sido reactivada exitosamente." });
         }
 
         // ============================
         // TIPOS DE SOLICITUD
         // ============================
-        [HttpGet("tipos-solicitud/area/{areaId:guid}")]
-        public async Task<IActionResult> GetTiposByArea(Guid areaId)
+        [HttpGet("tipos-solicitud")]
+        public async Task<IActionResult> GetTipos(
+            [FromQuery] Guid? areaId,
+            [FromQuery] bool mostrarInactivos = false,
+            CancellationToken cancellationToken = default)
         {
-            // Cambiar la llamada para usar GetAllAsync, ya que GetByAreaIdAsync devuelve void
-            var items = await _tipoService.GetAllAsync(areaId).ConfigureAwait(false);
+            var items = await _tipoService.GetAllAsync(areaId, mostrarInactivos, cancellationToken);
             return Ok(items);
         }
 
@@ -80,16 +91,14 @@ namespace MiniTicker.WebApi.Controllers
         public async Task<IActionResult> CreateTipo([FromBody] TipoSolicitudDto dto)
         {
             if (dto == null) return BadRequest();
-
             var created = await _tipoService.CreateAsync(dto).ConfigureAwait(false);
-            return CreatedAtAction(nameof(GetTiposByArea), new { areaId = created.AreaId }, created);
+            return CreatedAtAction(nameof(GetTipos), new { areaId = created.AreaId }, created);
         }
 
         [HttpPut("tipos-solicitud/{id:guid}")]
         public async Task<IActionResult> UpdateTipo(Guid id, [FromBody] TipoSolicitudDto dto)
         {
             if (dto == null) return BadRequest();
-
             var updated = await _tipoService.UpdateAsync(id, dto).ConfigureAwait(false);
             return Ok(updated);
         }
@@ -101,18 +110,21 @@ namespace MiniTicker.WebApi.Controllers
             return NoContent();
         }
 
-          [HttpGet("prioridades")]
+        // ARREGLO CS0111: Renombrado a ActivateTipo
+        [HttpPatch("tipos-solicitud/{id:guid}/activate")]
+        public async Task<IActionResult> ActivateTipo(Guid id, CancellationToken cancellationToken)
+        {
+            await _tipoService.ActivateAsync(id, cancellationToken);
+            return Ok(new { message = "El registro ha sido reactivado exitosamente." });
+        }
+
+        // ============================
+        // OTROS
+        // ============================
+        [HttpGet("prioridades")]
         public IActionResult GetPrioridades()
         {
-            var items = Enum.GetValues(typeof(Prioridad))
-                .Cast<Prioridad>()
-                .Select(p => new
-                {
-                    Id = (int)p,
-                    Nombre = p.ToString()
-                })
-                .ToList();
-
+            var items = Enum.GetValues(typeof(Prioridad)).Cast<Prioridad>().Select(p => new { Id = (int)p, Nombre = p.ToString() }).ToList();
             return Ok(items);
         }
     }

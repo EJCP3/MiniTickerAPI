@@ -110,6 +110,15 @@ namespace MiniTicker.Core.Application.Services
             ticket.Descripcion = dto.Descripcion;
             ticket.Prioridad = dto.Prioridad;
             ticket.FechaActualizacion = DateTime.UtcNow;
+            if (dto.ArchivoAdjunto != null)
+            {
+           
+                ticket.ArchivoAdjuntoUrl = await _fileStorageService
+                    .UploadAsync(dto.ArchivoAdjunto, "tickets");
+            }
+
+            // 3. Guardamos los cambios
+            await _ticketRepository.UpdateAsync(ticket);
 
             await _ticketRepository.UpdateAsync(ticket);
 
@@ -169,7 +178,8 @@ namespace MiniTicker.Core.Application.Services
                 TipoEvento = TicketEventType.CambioEstado,
                 EstadoAnterior = estadoAnterior,
                 EstadoNuevo = dto.Estado,
-                Fecha = DateTime.UtcNow
+                Fecha = DateTime.UtcNow,
+                Texto = dto.Motivo,
             }, cancellationToken);
 
             return await MapToTicketDtoAsync(ticket);
@@ -196,7 +206,7 @@ namespace MiniTicker.Core.Application.Services
                 Id = Guid.NewGuid(),
                 TicketId = ticket.Id,
                 UsuarioId = dto.GestorId,
-                TipoEvento = TicketEventType.CambioEstado,
+                TipoEvento = TicketEventType.Asignado,
                 Fecha = DateTime.UtcNow
             }, cancellationToken);
         }
@@ -261,8 +271,53 @@ namespace MiniTicker.Core.Application.Services
                 {
                     Usuario = MapUser(_userRepository.GetByIdAsync(c.UsuarioId).Result),
                     Texto = c.Texto,
-                    Fecha = c.Fecha
+                    Fecha = c.Fecha.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
                 }).ToList()
+            };
+        }
+
+        public async Task<ComentarioDto> AddCommentAsync(
+    Guid ticketId,
+    CreateComentarioDto dto,
+    Guid userId,
+    CancellationToken cancellationToken = default)
+        {
+            // 1. Validar que el ticket exista
+            var ticket = await _ticketRepository.GetByIdAsync(ticketId)
+                ?? throw new KeyNotFoundException("Ticket no encontrado.");
+
+            // 2. Crear la entidad Comentario
+            var comentario = new Comentario
+            {
+                Id = Guid.NewGuid(),
+                TicketId = ticketId,
+                UsuarioId = userId,
+                Texto = dto.Texto,
+                Fecha = DateTime.UtcNow
+            };
+
+            // 3. Guardar en base de datos
+            await _comentarioRepository.AddAsync(comentario, cancellationToken);
+
+            // 4. Registrar el evento en el historial (Audit Log)
+            await _ticketEventRepository.AddAsync(new TicketEvent
+            {
+                Id = Guid.NewGuid(),
+                TicketId = ticketId,
+                UsuarioId = userId,
+                TipoEvento = TicketEventType.ComentarioADD,
+                Texto = dto.Texto, // Guardamos el texto también en el evento para acceso rápido
+                Fecha = DateTime.UtcNow
+            }, cancellationToken);
+
+            // 5. Retornar DTO
+            var usuario = await _userRepository.GetByIdAsync(userId);
+
+            return new ComentarioDto
+            {
+                Texto = comentario.Texto,
+                Fecha = comentario.Fecha.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
+                Usuario = MapUser(usuario) // Usamos tu helper existente MapUser
             };
         }
 
@@ -283,7 +338,7 @@ namespace MiniTicker.Core.Application.Services
                 Prioridad = ticket.Prioridad.ToString(),
                 Area = MapArea(area),
                 TipoSolicitud = MapTipo(tipo),
-                FechaCreacion = ticket.FechaCreacion
+                FechaCreacion = ticket.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
             };
         }
 

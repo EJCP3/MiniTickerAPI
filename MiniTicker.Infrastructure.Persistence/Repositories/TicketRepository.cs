@@ -131,7 +131,9 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
 
             if (filter.FechaHasta.HasValue)
             {
-                query = query.Where(t => t.FechaCreacion <= filter.FechaHasta.Value);
+                var fechaFin = filter.FechaHasta.Value.Date.AddDays(1);
+
+                query = query.Where(t => t.FechaCreacion < fechaFin);
             }
 
             if (!string.IsNullOrWhiteSpace(filter.TextoBusqueda))

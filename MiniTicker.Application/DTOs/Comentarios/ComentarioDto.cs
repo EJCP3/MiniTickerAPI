@@ -6,6 +6,6 @@ namespace MiniTicker.Core.Application.Comments
     {
         public UserDto Usuario { get; set; } = null!;
         public string Texto { get; set; } = null!;
-        public DateTime Fecha { get; set; }
+        public string Fecha { get; set; } = null!;
     }
 }

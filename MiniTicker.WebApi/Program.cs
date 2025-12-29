@@ -6,6 +6,7 @@ using Microsoft.OpenApi.Models;
 using MiniTicker.Core.Application;
 using MiniTicker.Infrastructure;
 using MiniTicker.Infrastructure.Persistence;
+using MiniTicker.WebApi.Middleware;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -13,6 +14,7 @@ using System.Text.Json.Serialization;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
 // Limpia el mapeo por defecto para no remapear 'sub' a 'nameidentifier'
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
@@ -110,7 +112,7 @@ builder.Services
 
             // IMPORTANTE: Mapear a los nombres cortos que definimos en AuthService
             NameClaimType = "nombre",
-            RoleClaimType = "role"
+            RoleClaimType = ClaimTypes.Role
         };
     });
 // Application & Infrastructure
@@ -126,6 +128,7 @@ var app = builder.Build();
 // ==============================
 // Middleware pipeline
 // ==============================
+app.UseMiddleware<ErrorHandlerMiddleware>();
 
 app.UseCors("AllowSwagger");
 

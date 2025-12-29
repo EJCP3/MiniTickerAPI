@@ -12,5 +12,7 @@ namespace MiniTicker.Core.Application.Interfaces.Repositories
         Task DeleteAsync(TipoSolicitud tipoSolicitud);
         Task<TipoSolicitud?> GetByIdAsync(Guid id);
         Task<IReadOnlyList<TipoSolicitud>> GetByAreaIdAsync(Guid areaId);
+
+        Task<IReadOnlyList<TipoSolicitud>> GetAllAsync(bool incluirInactivos = false);
     }
 }

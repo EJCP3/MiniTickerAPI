@@ -5,7 +5,7 @@ namespace MiniTicker.Core.Application.Tickets
 {
     public class TicketHistoryDto
     {
-        public DateTime Fecha { get; set; }
+        public string Fecha { get; set; } = null!;
         public TicketEventType TipoEvento { get; set; }
 
         // Render-friendly

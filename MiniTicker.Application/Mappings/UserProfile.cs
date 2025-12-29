@@ -12,7 +12,7 @@ namespace MiniTicker.Core.Application.Mappings
             CreateMap<Usuario, UserDto>();
 
             // UpdateUserProfileDto -> Usuario
-            CreateMap<UpdateUserProfileDto, Usuario>()
+            CreateMap<UpdateUserDto, Usuario>()
                 .ForMember(d => d.Id, opt => opt.Ignore())
                 .ForMember(d => d.Rol, opt => opt.Ignore())
                 .ForMember(d => d.FotoPerfilUrl, opt => opt.Ignore())

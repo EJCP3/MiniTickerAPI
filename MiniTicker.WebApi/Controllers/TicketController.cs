@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MiniTicker.Core.Application.Comments;
 using MiniTicker.Core.Application.Filters;
 using MiniTicker.Core.Application.Interfaces.Repositories;
 using MiniTicker.Core.Application.Interfaces.Services;
 using MiniTicker.Core.Application.Read;
 using MiniTicker.Core.Application.Tickets;
+using MiniTicker.Core.Domain.Entities;
 using System;
 using System.Security.Claims;
 using System.Threading;
@@ -87,7 +89,7 @@ namespace MiniTicker.WebApi.Controllers
         }
 
         [HttpPut("{ticketId:guid}")]
-        public async Task<IActionResult> Update(Guid ticketId, [FromBody] UpdateTicketDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> Update(Guid ticketId, [FromForm] UpdateTicketDto dto, CancellationToken cancellationToken)
         {
             if (dto == null) return BadRequest();
 
@@ -98,9 +100,13 @@ namespace MiniTicker.WebApi.Controllers
         [HttpPatch("{ticketId:guid}/status")]
         public async Task<IActionResult> ChangeStatus(Guid ticketId, [FromBody] ChangeTicketStatusDto dto, CancellationToken cancellationToken)
         {
-            if (dto == null) return BadRequest();
-
-            var userId = Guid.Parse(User.FindFirst("sub")!.Value);
+            if (!TryGetUserId(out var userId))
+            {
+                // TRUCO DE DEBUG:
+                // Si falla, devolvemos la lista de lo que SÍ llegó para que veas qué está pasando
+                var claimsLlegaron = string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}"));
+                return Unauthorized($"No se pudo identificar el usuario. Claims recibidos: {claimsLlegaron}");
+            }
             var updated = await _ticketService.ChangeStatusAsync(ticketId, dto, userId, cancellationToken).ConfigureAwait(false);
             return Ok(updated);
         }
@@ -115,9 +121,36 @@ namespace MiniTicker.WebApi.Controllers
             return NoContent();
         }
 
+        [HttpPost("{ticketId:guid}/comentarios")]
+        [Authorize] // Requiere que el usuario esté logueado
+        public async Task<IActionResult> AddComment(
+    Guid ticketId,
+    [FromBody] CreateComentarioDto dto,
+    CancellationToken cancellationToken)
+        {
+            if (dto == null) return BadRequest("Datos inválidos.");
+            if (string.IsNullOrWhiteSpace(dto.Texto)) return BadRequest("El comentario no puede estar vacío.");
+
+            // Usamos tu método robusto para obtener el ID del usuario logueado
+            if (!TryGetUserId(out var userId))
+            {
+                return Unauthorized("No se pudo identificar el usuario.");
+            }
+
+            var result = await _ticketService.AddCommentAsync(ticketId, dto, userId, cancellationToken);
+
+            return Ok(result);
+        }
+
         [HttpGet("{id:guid}/historial")]
         public async Task<IActionResult> GetHistorial(Guid id, CancellationToken cancellationToken)
+
+
         {
+
+            var ticket = await _ticketService.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
+            if (ticket == null) return NotFound("El ticket no existe.");
+
             var eventos = await _ticketEventRepository
                 .GetByTicketIdOrderedAscAsync(id, cancellationToken)
                 .ConfigureAwait(false);
@@ -126,11 +159,11 @@ namespace MiniTicker.WebApi.Controllers
             foreach (var e in eventos)
             {
                 var autor = await _userRepository.GetByIdAsync(e.UsuarioId).ConfigureAwait(false);
-                var autorNombreRol = autor == null ? "Desconocido" : $"{autor.Nombre} ({autor.Rol})";
+                var autorNombreRol = autor == null ? "Desconocido" : $"{autor.Nombre}";
 
                 var dto = new TicketHistoryDto
                 {
-                    Fecha = e.Fecha,
+                    Fecha = e.Fecha.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
                     TipoEvento = e.TipoEvento,
                     EstadoAnterior = e.EstadoAnterior,
                     EstadoNuevo = e.EstadoNuevo,
@@ -144,17 +177,28 @@ namespace MiniTicker.WebApi.Controllers
                     case Core.Domain.Enums.TicketEventType.Creado:
                         dto.Titulo = "Solicitud creada";
                         dto.Subtitulo = $"Por: {autorNombreRol}";
-                        dto.Descripcion = null;
+                        dto.Descripcion = $"Se creó la solicitud para {ticket.Asunto}";
                         break;
                     case Core.Domain.Enums.TicketEventType.CambioEstado:
                         dto.Titulo = $"Estado actualizado a {e.EstadoNuevo}";
                         dto.Subtitulo = $"Por: {autorNombreRol}";
-                        dto.Descripcion = $"Cambio de estado de {e.EstadoAnterior} a {e.EstadoNuevo}";
+                        string descripcion = $"Cambio de estado de {e.EstadoAnterior} a {e.EstadoNuevo}";
+                        if (!string.IsNullOrEmpty(e.Texto))
+                        {
+                            descripcion = $". Motivo: {e.Texto}";
+                        }
+                        dto.Descripcion = descripcion;
                         break;
                     case Core.Domain.Enums.TicketEventType.ComentarioADD:
                         dto.Titulo = "Comentario agregado";
-                        dto.Subtitulo = $"Por: {autorNombreRol}";
+                        dto.Subtitulo = $"Por:{autorNombreRol}";
                         dto.Descripcion = e.Texto;
+                        break;
+                    case Core.Domain.Enums.TicketEventType.Asignado:
+                        dto.Titulo = "Gestor Asignado";
+                        // Como guardamos el ID del gestor en el evento, 'autorNombreRol' será el nombre del gestor
+                        dto.Subtitulo = $"Gestor responsable: {autorNombreRol}";
+                        dto.Descripcion = "El ticket ha sido asignado a un gestor para su atención.";
                         break;
                 }
 
@@ -163,5 +207,22 @@ namespace MiniTicker.WebApi.Controllers
 
             return Ok(items);
         }
+
+        //[HttpGet("check-mis-permisos")]
+        //[Authorize]
+        //public IActionResult CheckPermissions()
+        //{
+        //    var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+        //    var esSuperAdmin = User.IsInRole("SuperAdmin");
+        //    var esAdmin = User.IsInRole("Admin");
+
+        //    return Ok(new
+        //    {
+        //        Mensaje = "Diagnóstico de permisos",
+        //        EsSuperAdmin = esSuperAdmin,
+        //        EsAdmin = esAdmin,
+        //        MisClaims = claims
+        //    });
+        //}
     }
 }

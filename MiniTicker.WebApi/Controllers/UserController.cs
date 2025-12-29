@@ -9,6 +9,7 @@ using MiniTicker.Core.Application.Users;
 namespace MiniTicker.WebApi.Controllers
 {
     [ApiController]
+    // [Authorize(Roles = "SuperAdmin")] 
     [Route("api/users")]
     public class UserController : ControllerBase
     {
@@ -47,15 +48,13 @@ namespace MiniTicker.WebApi.Controllers
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        [HttpPut("profile")]
-        public async Task<IActionResult> UpdateProfile([FromForm] UpdateUserProfileDto dto, CancellationToken cancellationToken)
+        [HttpPut("{id:guid}")]
+        public async Task<IActionResult> UpdateUser(Guid id, [FromForm] UpdateUserDto dto)
         {
-            if (dto == null) return BadRequest();
-
-            var userId = Guid.Parse(User.FindFirst("sub")!.Value);
-            var updated = await _userService.UpdateProfileAsync(userId, dto, cancellationToken).ConfigureAwait(false);
-            return Ok(updated);
+            var result = await _userService.UpdateAsync(id, dto);
+            return Ok(result);
         }
+
 
         [HttpPut("{id:guid}/activate")]
         public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
@@ -69,6 +68,14 @@ namespace MiniTicker.WebApi.Controllers
         {
             await _userService.DeactivateAsync(id, cancellationToken).ConfigureAwait(false);
             return NoContent();
+        }
+
+        [HttpDelete("{id:guid}")]
+        
+        public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+        {
+            await _userService.DeleteAsync(id, cancellationToken).ConfigureAwait(false);
+            return NoContent(); // Retorna 204 si se borró correctamente
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MiniTicker.Infrastructure.Persistence;
@@ -50,12 +51,20 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
                 .FirstOrDefaultAsync(u => u.Email == email)
                 .ConfigureAwait(false);
         }
+        public async Task DeleteAsync(Usuario usuario)
+        {
+            if (usuario == null) throw new ArgumentNullException(nameof(usuario));
 
-        public async Task<IReadOnlyList<Usuario>> GetAllAsync()
+            // Esto borra el registro físicamente de la tabla Usuarios
+            _context.Usuarios.Remove(usuario);
+
+            await _context.SaveChangesAsync();
+        }
+        public async Task<IReadOnlyList<Usuario>> GetAllAsync(CancellationToken cancellationToken)
         {
             var list = await _context.Usuarios
                 .AsNoTracking()
-                .ToListAsync()
+                .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             return list;

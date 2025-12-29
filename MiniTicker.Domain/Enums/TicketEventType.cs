@@ -4,6 +4,7 @@ namespace MiniTicker.Core.Domain.Enums
     {
         Creado,
         CambioEstado,
-        ComentarioADD
+        ComentarioADD,
+        Asignado
     }
 }

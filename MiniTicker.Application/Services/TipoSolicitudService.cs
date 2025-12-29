@@ -19,14 +19,26 @@ namespace MiniTicker.Core.Application.Services
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
 
-        public async Task<IReadOnlyList<TipoSolicitudDto>> GetAllAsync(Guid? areaId = null, CancellationToken cancellationToken = default)
+        // ============================================================
+        // GET ALL (Fusionado: Maneja Filtro por Área y Filtro de Inactivos)
+        // ============================================================
+        public async Task<IReadOnlyList<TipoSolicitudDto>> GetAllAsync(
+            Guid? areaId = null,
+            bool incluirInactivos = false,
+            CancellationToken cancellationToken = default)
         {
-            // Si se proporciona areaId, obtener por área; si no, solicitar todos pasándole Guid.Empty.
-            // Nota: el repositorio debe soportar Guid.Empty para devolver todos, o bien implementar GetAllAsync en el repositorio.
-            var entities = areaId.HasValue
-                ? await _repository.GetByAreaIdAsync(areaId.Value).ConfigureAwait(false)
-                : await _repository.GetByAreaIdAsync(Guid.Empty).ConfigureAwait(false);
+            // 1. Obtenemos la lista base desde el repositorio (aplicando el filtro de activo/inactivo)
+            var entities = await _repository.GetAllAsync(incluirInactivos);
 
+            // 2. Si nos pidieron filtrar por Área específica, aplicamos el filtro en memoria (LINQ)
+            if (areaId.HasValue && areaId != Guid.Empty)
+            {
+                // Filtramos sobre la lista que ya trajimos
+                var filtradas = entities.Where(e => e.AreaId == areaId.Value).ToList();
+                return filtradas.Select(MapToDto).ToList();
+            }
+
+            // 3. Si no hay filtro de área, devolvemos todo lo que trajo el repo
             return entities.Select(MapToDto).ToList();
         }
 
@@ -46,13 +58,9 @@ namespace MiniTicker.Core.Application.Services
             {
                 Id = dto.Id == Guid.Empty ? Guid.NewGuid() : dto.Id,
                 Nombre = dto.Nombre,
-                AreaId = dto.Id == Guid.Empty ? dto.Id : dto.Id, // map dto.AreaId if present in DTO; DTO currently has AreaId property
+                AreaId = dto.AreaId,
                 Activo = dto.Activo
             };
-
-            // If DTO has AreaId property, use it (DTO defined as TipoSolicitudDto includes AreaId)
-            // Fix: assign correctly
-            entity.AreaId = dto.AreaId;
 
             await _repository.AddAsync(entity).ConfigureAwait(false);
 
@@ -75,6 +83,10 @@ namespace MiniTicker.Core.Application.Services
             return MapToDto(existing);
         }
 
+        // ============================================================
+        // ACTIONS (Activar / Desactivar / Borrar)
+        // ============================================================
+
         public async Task ActivateAsync(Guid tipoSolicitudId, CancellationToken cancellationToken = default)
         {
             var existing = await _repository.GetByIdAsync(tipoSolicitudId).ConfigureAwait(false);
@@ -93,8 +105,24 @@ namespace MiniTicker.Core.Application.Services
             await _repository.UpdateAsync(existing).ConfigureAwait(false);
         }
 
-        #region Helpers
+        public async Task DeleteAsync(Guid tipoSolicitudId, CancellationToken cancellationToken = default)
+        {
+            // 1. Buscamos el registro
+            var existing = await _repository.GetByIdAsync(tipoSolicitudId).ConfigureAwait(false);
 
+            if (existing == null)
+                throw new KeyNotFoundException($"TipoSolicitud con id '{tipoSolicitudId}' no encontrada.");
+
+            // 2. BORRADO LÓGICO (Soft Delete)
+            existing.Activo = false;
+
+            // 3. Actualizamos
+            await _repository.UpdateAsync(existing).ConfigureAwait(false);
+        }
+
+        // ============================================================
+        // HELPERS
+        // ============================================================
         private static TipoSolicitudDto MapToDto(TipoSolicitud entity)
             => new TipoSolicitudDto
             {
@@ -104,46 +132,7 @@ namespace MiniTicker.Core.Application.Services
                 Activo = entity.Activo
             };
 
-        #endregion
-        public async Task<IReadOnlyList<TipoSolicitudDto>> GetByAreaIdAsync(
-    Guid areaId,
-    CancellationToken cancellationToken = default)
-        {
-            var entities = await _repository
-                .GetByAreaIdAsync(areaId)
-                .ConfigureAwait(false);
-
-            return entities.Select(MapToDto).ToList();
-        }
-
-        public async Task DeleteAsync(
-            Guid tipoSolicitudId,
-            CancellationToken cancellationToken = default)
-        {
-            var existing = await _repository
-                .GetByIdAsync(tipoSolicitudId)
-                .ConfigureAwait(false);
-
-            if (existing == null)
-                throw new KeyNotFoundException(
-                    $"TipoSolicitud con id '{tipoSolicitudId}' no encontrada.");
-
-            await _repository.DeleteAsync(existing)
-                .ConfigureAwait(false);
-        }
-
-        // Implementación explícita para cumplir con la interfaz ITipoSolicitudService
-        async Task ITipoSolicitudService.GetByAreaIdAsync(Guid areaId)
-        {
-            await GetByAreaIdAsync(areaId);
-        }
-
-        async Task ITipoSolicitudService.DeleteAsync(Guid id)
-        {
-            await DeleteAsync(id);
-        }
+        // NOTA: He borrado todo el bloque de "Implementación explícita" que tenías aquí abajo.
+        // Ya no es necesario porque los métodos públicos de arriba cumplen con la interfaz.
     }
-
-
-
 }
