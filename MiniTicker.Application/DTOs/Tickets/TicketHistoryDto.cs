@@ -8,12 +8,11 @@ namespace MiniTicker.Core.Application.Tickets
         public string Fecha { get; set; } = null!;
         public TicketEventType TipoEvento { get; set; }
 
-        // Render-friendly
-        public string? Titulo { get; set; }     // ej: "Estado actualizado a Cancelado" o "Comentario agregado"
-        public string? Subtitulo { get; set; }  // ej: "Por: Administrador"
-        public string? Descripcion { get; set; }// ej: "Cambio de estado de En Espera a Cancelado" o el texto del comentario
+        public string? Titulo { get; set; }     
+        public string? Subtitulo { get; set; }  
+        public string? Descripcion { get; set; }
 
-        // Datos técnicos
+        
         public EstadoTicket? EstadoAnterior { get; set; }
         public EstadoTicket? EstadoNuevo { get; set; }
         public CommentType? TipoComentario { get; set; }

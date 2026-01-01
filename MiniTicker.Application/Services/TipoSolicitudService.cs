@@ -132,7 +132,6 @@ namespace MiniTicker.Core.Application.Services
                 Activo = entity.Activo
             };
 
-        // NOTA: He borrado todo el bloque de "Implementación explícita" que tenías aquí abajo.
-        // Ya no es necesario porque los métodos públicos de arriba cumplen con la interfaz.
+      
     }
 }

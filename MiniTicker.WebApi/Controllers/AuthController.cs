@@ -8,6 +8,7 @@ namespace MiniTicker.WebApi.Controllers
 {
     [ApiController]
     [Route("api/auth")]
+    [Tags("01. Auth")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;

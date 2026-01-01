@@ -2,6 +2,9 @@
 using MiniTicker.Core.Domain.Entities;
 using MiniTicker.Core.Domain.Enums;
 using MiniTicker.Infrastructure.Persistence;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MiniTicker.Infrastructure.Persistence.Seeds
 {
@@ -9,25 +12,25 @@ namespace MiniTicker.Infrastructure.Persistence.Seeds
     {
         public static async Task SeedAsync(ApplicationDbContext context)
         {
-            // 1. ELIMINAMOS EL BLOQUEO GENERAL
-            // if (await context.Tickets.AnyAsync()) return;  <-- ESTO ERA EL PROBLEMA
-
-            // Recuperar usuarios y catálogos necesarios
             var solicitante = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "ana@miniticker.com");
             var gestor = await context.Usuarios.FirstOrDefaultAsync(u => u.Email == "juan@miniticker.com");
-            var tipoSoporte = await context.TiposSolicitud.FirstOrDefaultAsync(t => t.Nombre == "Soporte PC");
+
+            var tipoSoporte = await context.TiposSolicitud
+                .Include(t => t.Area)
+                .FirstOrDefaultAsync(t => t.Nombre == "Soporte PC");
 
             if (solicitante == null || gestor == null || tipoSoporte == null) return;
 
-            // ================================================================
-            // 2. BUSCAR O CREAR EL TICKET (Lógica Upsert)
-            // ================================================================
-            var numeroTicket = "SOL-2025-0001";
+            string prefijo = !string.IsNullOrEmpty(tipoSoporte.Area?.Prefijo)
+                             ? tipoSoporte.Area.Prefijo
+                             : "SOL";
+
+            var numeroTicket = $"{prefijo}-2025-0001";
+
             var ticket = await context.Tickets.FirstOrDefaultAsync(t => t.Numero == numeroTicket);
 
             if (ticket == null)
             {
-                // Si no existe, lo creamos
                 ticket = new Ticket
                 {
                     Id = Guid.NewGuid(),
@@ -44,21 +47,18 @@ namespace MiniTicker.Infrastructure.Persistence.Seeds
                 };
                 context.Tickets.Add(ticket);
 
-                // Agregamos eventos iniciales solo si el ticket es nuevo
+                // Agregamos eventos iniciales
                 var eventos = new List<TicketEvent>
                 {
-                    new TicketEvent { Id = Guid.NewGuid(), TicketId = ticket.Id, UsuarioId = solicitante.Id, TipoEvento = TicketEventType.Creado, Fecha = DateTime.UtcNow.AddHours(-5), EstadoNuevo = EstadoTicket.Nueva, Texto = "Ticket creado", VisibleParaSolicitante = true },
-                    new TicketEvent { Id = Guid.NewGuid(), TicketId = ticket.Id, UsuarioId = gestor.Id, TipoEvento = TicketEventType.Asignado, Fecha = DateTime.UtcNow.AddHours(-4), EstadoAnterior = EstadoTicket.Nueva, EstadoNuevo = EstadoTicket.EnProceso, Texto = "Tomado por el gestor", VisibleParaSolicitante = true }
+                    new TicketEvent { Id = Guid.NewGuid(), TicketId = ticket.Id, UsuarioId = solicitante.Id, TipoEvento = TicketEventType.Creado, Fecha = DateTime.UtcNow.AddHours(-5), EstadoNuevo = EstadoTicket.Nueva, Texto = "Ticket creado" },
+                    new TicketEvent { Id = Guid.NewGuid(), TicketId = ticket.Id, UsuarioId = gestor.Id, TipoEvento = TicketEventType.Asignado, Fecha = DateTime.UtcNow.AddHours(-4), EstadoAnterior = EstadoTicket.Nueva, EstadoNuevo = EstadoTicket.EnProceso, Texto = "Tomado por el gestor" }
                 };
                 context.TicketEvents.AddRange(eventos);
 
-                await context.SaveChangesAsync(); // Guardamos para tener el ID listo
+                await context.SaveChangesAsync();
             }
 
-            // ================================================================
-            // 3. ASEGURAR QUE TENGA COMENTARIOS
-            // ================================================================
-            // Verificamos si este ticket ya tiene comentarios
+          
             bool tieneComentarios = await context.Comentarios.AnyAsync(c => c.TicketId == ticket.Id);
 
             if (!tieneComentarios)

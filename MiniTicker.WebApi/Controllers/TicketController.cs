@@ -16,7 +16,8 @@ namespace MiniTicker.WebApi.Controllers
 {
     [ApiController]
     [Route("api/tickets")]
-    [Authorize] 
+    [Authorize]
+    [Tags("03. Tickets")]
     public class TicketController : ControllerBase
     {
         private readonly ITicketService _ticketService;
@@ -157,19 +158,15 @@ namespace MiniTicker.WebApi.Controllers
         [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetHistorial(Guid id, CancellationToken cancellationToken)
         {
-            // 1. Validar ticket
             var ticket = await _ticketService.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
             if (ticket == null) return NotFound("El ticket no existe.");
 
-            // 2. Traer EVENTOS (Cambios de estado, asignaciones)
             var eventos = await _ticketEventRepository
                 .GetByTicketIdOrderedAscAsync(id, cancellationToken)
                 .ConfigureAwait(false);
 
-            // 3. Traer COMENTARIOS (El chat) - ¡ESTO ES LO QUE FALTABA!
             var comentarios = await _comentarioRepository
-                .GetByTicketIdOrderedByFechaAscAsync(id); // Asegúrate de que tu repo tenga este método o usa un Where
-
+                .GetByTicketIdOrderedByFechaAscAsync(id); 
             var items = new System.Collections.Generic.List<TicketHistoryDto>();
 
             // --- PROCESAR EVENTOS ---
@@ -184,9 +181,7 @@ namespace MiniTicker.WebApi.Controllers
                     TipoEvento = e.TipoEvento,
                     EstadoAnterior = e.EstadoAnterior,
                     EstadoNuevo = e.EstadoNuevo,
-                    TipoComentario = e.TipoComentario,
-                    VisibleParaSolicitante = e.VisibleParaSolicitante,
-                    VisibleSoloGestores = e.VisibleSoloGestores
+                   
                 };
 
                 switch (e.TipoEvento)
@@ -204,7 +199,7 @@ namespace MiniTicker.WebApi.Controllers
                         dto.Descripcion = descripcion;
                         break;
                     case Core.Domain.Enums.TicketEventType.ComentarioADD:
-                        // Este caso es para comentarios guardados como eventos (si existieran)
+                       
                         dto.Titulo = "Comentario agregado";
                         dto.Subtitulo = $"Por: {autorNombreRol}";
                         dto.Descripcion = e.Texto;
@@ -218,7 +213,6 @@ namespace MiniTicker.WebApi.Controllers
                 items.Add(dto);
             }
 
-            // --- PROCESAR COMENTARIOS (Hacerlos parecer eventos del historial) ---
             foreach (var c in comentarios)
             {
                 var autor = await _userRepository.GetByIdAsync(c.UsuarioId).ConfigureAwait(false);
@@ -226,21 +220,17 @@ namespace MiniTicker.WebApi.Controllers
 
                 var dto = new TicketHistoryDto
                 {
-                    // Usamos el mismo formato de fecha
                     Fecha = c.Fecha.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
-                    // Disfrazamos el comentario como un evento de tipo "ComentarioADD"
                     TipoEvento = Core.Domain.Enums.TicketEventType.ComentarioADD,
                     Titulo = "Comentario",
-                    Subtitulo = $"Por: {autorNombre}", // Puedes agregar el rol si quieres: $"{autorNombre} ({autor.Rol})"
-                    Descripcion = c.Texto, // Aquí va el mensaje del chat
+                    Subtitulo = $"Por: {autorNombre}",
+                    Descripcion = c.Texto,
                     VisibleParaSolicitante = true,
                     VisibleSoloGestores = false
                 };
                 items.Add(dto);
             }
 
-            // 4. ORDENAR TODO CRONOLÓGICAMENTE (Eventos y Comentarios mezclados)
-            // Parseamos la fecha string para ordenar correctamente
             items = items.OrderBy(x => DateTime.ParseExact(x.Fecha, "dd/MM/yyyy hh:mm tt", null)).ToList();
 
             return Ok(items);

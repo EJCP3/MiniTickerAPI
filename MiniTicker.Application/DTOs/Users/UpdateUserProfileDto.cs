@@ -4,7 +4,7 @@ using System;
 
 namespace MiniTicker.Core.Application.Users
 {
-    public class UpdateUserDto // Le cambié el nombre a algo más genérico
+    public class UpdateUserDto 
     {
         public string Nombre { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;

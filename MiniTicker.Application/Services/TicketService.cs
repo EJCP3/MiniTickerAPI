@@ -43,11 +43,12 @@ namespace MiniTicker.Core.Application.Services
         // CREATE
         // =====================================================
         public async Task<TicketDto> CreateAsync(
-            CreateTicketDto dto,
-            Guid userId,
-            CancellationToken cancellationToken = default)
+              CreateTicketDto dto,
+              Guid userId,
+              CancellationToken cancellationToken = default)
         {
-            _ = await _areaRepository.GetByIdAsync(dto.AreaId)
+            // 1. CAMBIO: Guardamos el área en la variable 'area' (antes era "_ =")
+            var area = await _areaRepository.GetByIdAsync(dto.AreaId)
                 ?? throw new KeyNotFoundException("Área no encontrada.");
 
             _ = await _tipoSolicitudRepository.GetByIdAsync(dto.TipoSolicitudId)
@@ -55,7 +56,12 @@ namespace MiniTicker.Core.Application.Services
 
             var year = DateTime.UtcNow.Year;
             var (_, totalCount) = await _ticketRepository.GetPagedAsync(new TicketFilterDto());
-            var numero = $"SOL-{year}-{totalCount + 1:0000}";
+
+            // 2. CAMBIO: Usamos el Prefijo del área. Si está vacío, usamos "SOL" por defecto.
+            string prefijo = string.IsNullOrWhiteSpace(area.Prefijo) ? "SOL" : area.Prefijo;
+
+            // 3. CAMBIO: Insertamos el prefijo en el formato del número
+            var numero = $"{prefijo}-{year}-{totalCount + 1:0000}";
 
             string? archivoUrl = null;
             if (dto.ArchivoAdjunto != null)
@@ -66,7 +72,7 @@ namespace MiniTicker.Core.Application.Services
             var ticket = new Ticket
             {
                 Id = Guid.NewGuid(),
-                Numero = numero,
+                Numero = numero, // Aquí ya va con el prefijo (Ej: SOP-2025-0005)
                 Asunto = dto.Asunto,
                 Descripcion = dto.Descripcion,
                 Prioridad = dto.Prioridad,

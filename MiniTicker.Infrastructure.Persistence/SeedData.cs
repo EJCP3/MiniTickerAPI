@@ -1,4 +1,6 @@
-﻿using MiniTicker.Infrastructure.Persistence.Seeds; // Importante para ver las clases staticas
+﻿using Microsoft.EntityFrameworkCore;
+using MiniTicker.Infrastructure.Persistence.Seeds;
+using System; // Agrega esto
 
 namespace MiniTicker.Infrastructure.Persistence
 {
@@ -6,16 +8,32 @@ namespace MiniTicker.Infrastructure.Persistence
     {
         public static async Task SeedAsync(ApplicationDbContext context)
         {
-            await context.Database.EnsureCreatedAsync();
+            try
+            {
+            
+                await context.Database.MigrateAsync();
 
-            // 1. Primero Catálogos (No dependen de nadie)
-            await CatalogSeed.SeedAsync(context);
+              
+                await CatalogSeed.SeedAsync(context);
 
-            // 2. Usuarios (Dependen de Áreas)
-            await UserSeed.SeedAsync(context);
+             
+                await UserSeed.SeedAsync(context);
 
-            // 3. Tickets (Dependen de Usuarios y Catálogos)
-            await TicketSeed.SeedAsync(context);
+            
+                await TicketSeed.SeedAsync(context);
+
+              
+            }
+            catch (Exception ex)
+            {
+                // Esto hará que el error salga en rojo en la consola de "Depuración"
+                Console.WriteLine($"--> [ERROR FATAL] {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"--> [DETALLE INTERNO] {ex.InnerException.Message}");
+                }
+                throw; // Relanzamos para que se note en Program.cs
+            }
         }
     }
 }

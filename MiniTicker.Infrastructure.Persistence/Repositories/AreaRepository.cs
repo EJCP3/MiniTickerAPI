@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq; // Necesario para Where y OrderBy
-using System.Threading; // Necesario para CancellationToken
+using System.Linq; 
+using System.Threading; 
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MiniTicker.Infrastructure.Persistence;
@@ -51,7 +51,6 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
                 .ConfigureAwait(false);
         }
 
-        // ✅ Corrección CS0535: Agregamos 'CancellationToken cancellationToken = default'
         public async Task<IReadOnlyList<Area>> GetAllAsync(bool incluirInactivos = false, CancellationToken cancellationToken = default)
         {
             // 1. Preparamos la consulta base

@@ -12,7 +12,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
-
+using MiniTicker.Infrastructure.Persistence.Seeds; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -132,7 +132,8 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
-        
+
+        // Simplemente llamamos a tu clase orquestadora
         await DbInitializer.SeedAsync(context);
     }
     catch (Exception ex)

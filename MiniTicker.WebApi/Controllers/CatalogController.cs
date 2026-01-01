@@ -12,6 +12,8 @@ namespace MiniTicker.WebApi.Controllers
 {
     [ApiController]
     [Route("api/catalog")]
+    [Tags("02. Catálogos")]
+
     // Se requiere estar autenticado para cualquier acción
     [Authorize]
     public class CatalogController : ControllerBase
@@ -40,10 +42,15 @@ namespace MiniTicker.WebApi.Controllers
         // Escritura: Solo Admin gestiona catálogos.
         [HttpPost("areas")]
         [Authorize(Roles = "Admin,SuperAdmin")]
-        public async Task<IActionResult> CreateArea([FromBody] AreaDto dto)
+        public async Task<IActionResult> CreateArea(
+              [FromBody] CreateAreaDto dto,       
+              CancellationToken cancellationToken) 
         {
             if (dto == null) return BadRequest();
-            var created = await _areaService.CreateAsync(dto).ConfigureAwait(false);
+
+            // 3. Pasamos el token al servicio
+            var created = await _areaService.CreateAsync(dto, cancellationToken).ConfigureAwait(false);
+
             return CreatedAtAction(nameof(GetAreaById), new { id = created.Id }, created);
         }
 

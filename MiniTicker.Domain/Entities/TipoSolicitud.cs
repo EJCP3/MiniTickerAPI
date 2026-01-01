@@ -7,5 +7,7 @@ namespace MiniTicker.Core.Domain.Entities
         public string Nombre { get; set; } = null!;
         public Guid AreaId { get; set; }
         public bool Activo { get; set; }
+
+        public virtual Area Area { get; set; } = null!;
     }
 }

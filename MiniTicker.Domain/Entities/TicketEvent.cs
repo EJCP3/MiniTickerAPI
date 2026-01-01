@@ -1,28 +1,24 @@
-using System;
-using MiniTicker.Core.Domain.Domain;
+﻿using System;
 using MiniTicker.Core.Domain.Enums;
 
 namespace MiniTicker.Core.Domain.Entities
 {
-    public class TicketEvent : BaseEntity
+    public class TicketEvent
     {
+        public Guid Id { get; set; }
         public Guid TicketId { get; set; }
         public Guid UsuarioId { get; set; }
+
         public TicketEventType TipoEvento { get; set; }
+        public string? Texto { get; set; }
 
-        // Datos comunes
-        public DateTime Fecha { get; set; }
-
-        // Para cambios de estado
         public EstadoTicket? EstadoAnterior { get; set; }
         public EstadoTicket? EstadoNuevo { get; set; }
 
-        // Para comentarios
-        public CommentType? TipoComentario { get; set; }
-        public string? Texto { get; set; }
+        public DateTime Fecha { get; set; } = DateTime.UtcNow;
 
-        // Visibilidad opcional
-        public bool? VisibleParaSolicitante { get; set; }
-        public bool? VisibleSoloGestores { get; set; }
+      
+        public virtual Ticket Ticket { get; set; } = null!;
+        public virtual Usuario Usuario { get; set; } = null!;
     }
 }

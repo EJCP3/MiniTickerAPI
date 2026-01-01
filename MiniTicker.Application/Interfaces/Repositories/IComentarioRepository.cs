@@ -12,19 +12,12 @@ namespace MiniTicker.Core.Application.Interfaces.Repositories
     /// </summary>
     public interface IComentarioRepository
     {
-        /// <summary>
-        /// Agrega un comentario de forma asíncrona.
-        /// </summary>
+       
         Task<Comentario> AddAsync(Comentario comentario, CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Obtiene todos los comentarios asociados a un ticket por su Id.
-        /// </summary>
+    
         Task<IReadOnlyList<Comentario>> GetByTicketIdAsync(Guid ticketId, CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Obtiene todos los comentarios de un ticket ordenados por fecha ascendente.
-        /// </summary>
         Task<IReadOnlyList<Comentario>> GetByTicketIdOrderedByFechaAscAsync(Guid ticketId, CancellationToken cancellationToken = default);
     }
 }

@@ -11,6 +11,7 @@ namespace MiniTicker.WebApi.Controllers
     [ApiController]
     [Authorize(Roles = "SuperAdmin")]
     [Route("api/users")]
+    [Tags("05. Usuarios")]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;

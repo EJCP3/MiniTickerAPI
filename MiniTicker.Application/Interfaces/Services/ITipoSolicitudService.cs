@@ -8,7 +8,6 @@ namespace MiniTicker.Core.Application.Interfaces.Services
 {
     public interface ITipoSolicitudService
     {
-        // ARREGLO CS0121: Un solo método GetAllAsync que maneja todo
         Task<IReadOnlyList<TipoSolicitudDto>> GetAllAsync(Guid? areaId = null, bool incluirInactivos = false, CancellationToken cancellationToken = default);
 
         Task<TipoSolicitudDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
@@ -20,6 +19,6 @@ namespace MiniTicker.Core.Application.Interfaces.Services
 
         Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
-        // Puedes borrar GetByAreaIdAsync de la interfaz si ya usas GetAllAsync con filtro
+        
     }
 }

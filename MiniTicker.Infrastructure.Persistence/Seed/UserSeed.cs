@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MiniTicker.Core.Domain.Entities;
 using MiniTicker.Core.Domain.Enums;
+using MiniTicker.Infrastructure.Persistence; 
 using BCrypt.Net;
 
 namespace MiniTicker.Infrastructure.Persistence.Seeds
@@ -9,17 +10,18 @@ namespace MiniTicker.Infrastructure.Persistence.Seeds
     {
         public static async Task SeedAsync(ApplicationDbContext context)
         {
-            if (await context.Usuarios.AnyAsync()) return;
-
+           
             var areaTI = await context.Areas.FirstOrDefaultAsync(a => a.Nombre == "TI");
-            if (areaTI == null) return;
 
+         
             string passwordPlano = "123456";
+         
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(passwordPlano);
 
-            var usuarios = new List<Usuario>
+            var listaUsuarios = new List<Usuario>
             {
-                 new Usuario
+                // SuperAdmin
+                new Usuario
                 {
                     Id = Guid.NewGuid(),
                     Nombre = "Pedro",
@@ -28,7 +30,7 @@ namespace MiniTicker.Infrastructure.Persistence.Seeds
                     Rol = Rol.SuperAdmin,
                     Activo = true
                 },
-
+                // Admin
                 new Usuario
                 {
                     Id = Guid.NewGuid(),
@@ -38,16 +40,7 @@ namespace MiniTicker.Infrastructure.Persistence.Seeds
                     Rol = Rol.Admin,
                     Activo = true
                 },
-                new Usuario
-                {
-                    Id = Guid.NewGuid(),
-                    Nombre = "Juan",
-                    Email = "juan@miniticker.com",
-                    PasswordHash = passwordHash,
-                    Rol = Rol.Gestor,
-                    AreaId = areaTI.Id,
-                    Activo = true
-                },
+                // Solicitante
                 new Usuario
                 {
                     Id = Guid.NewGuid(),
@@ -59,7 +52,33 @@ namespace MiniTicker.Infrastructure.Persistence.Seeds
                 }
             };
 
-            context.Usuarios.AddRange(usuarios);
+            // Agregamos al Gestor (Juan) SOLO si el área TI existe
+            if (areaTI != null)
+            {
+                listaUsuarios.Add(new Usuario
+                {
+                    Id = Guid.NewGuid(),
+                    Nombre = "Juan",
+                    Email = "juan@miniticker.com",
+                    PasswordHash = passwordHash,
+                    Rol = Rol.Gestor,
+                    AreaId = areaTI.Id, 
+                    Activo = true
+                });
+            }
+
+            // 5. LÓGICA DE UPSERT (Insertar si no existe)
+            foreach (var usuario in listaUsuarios)
+            {
+                // Verificamos por Email para no duplicar
+                bool existe = await context.Usuarios.AnyAsync(u => u.Email == usuario.Email);
+
+                if (!existe)
+                {
+                    context.Usuarios.Add(usuario);
+                }
+            }
+
             await context.SaveChangesAsync();
         }
     }

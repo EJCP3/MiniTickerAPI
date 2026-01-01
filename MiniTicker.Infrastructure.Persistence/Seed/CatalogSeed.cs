@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MiniTicker.Core.Domain.Entities;
-// Ajusta este namespace al de tu DbContext
 using MiniTicker.Infrastructure.Persistence;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace MiniTicker.Infrastructure.Persistence.Seeds
 {
@@ -10,43 +12,58 @@ namespace MiniTicker.Infrastructure.Persistence.Seeds
         public static async Task SeedAsync(ApplicationDbContext context)
         {
             // =================================================================
-            // PASO 1: ASEGURAR QUE LAS ÁREAS EXISTAN
+            // PASO 1: ASEGURAR QUE LAS ÁREAS EXISTAN (Y TENGAN PREFIJO)
             // =================================================================
 
             // --- Área TI ---
             var areaTI = await context.Areas.FirstOrDefaultAsync(a => a.Nombre == "TI");
             if (areaTI == null)
             {
-                areaTI = new Area { Id = Guid.NewGuid(), Nombre = "TI", Activo = true };
+                areaTI = new Area { Id = Guid.NewGuid(), Nombre = "TI", Prefijo = "TEC", Activo = true };
                 context.Areas.Add(areaTI);
+            }
+            else if (string.IsNullOrEmpty(areaTI.Prefijo)) // Si existe pero no tiene prefijo, se lo ponemos
+            {
+                areaTI.Prefijo = "TEC";
             }
 
             // --- Área Mantenimiento ---
             var areaMant = await context.Areas.FirstOrDefaultAsync(a => a.Nombre == "Mantenimiento");
             if (areaMant == null)
             {
-                areaMant = new Area { Id = Guid.NewGuid(), Nombre = "Mantenimiento", Activo = true };
+                areaMant = new Area { Id = Guid.NewGuid(), Nombre = "Mantenimiento", Prefijo = "MAN", Activo = true };
                 context.Areas.Add(areaMant);
+            }
+            else if (string.IsNullOrEmpty(areaMant.Prefijo))
+            {
+                areaMant.Prefijo = "MAN";
             }
 
             // --- Área Transporte ---
             var areaTrans = await context.Areas.FirstOrDefaultAsync(a => a.Nombre == "Transporte");
             if (areaTrans == null)
             {
-                areaTrans = new Area { Id = Guid.NewGuid(), Nombre = "Transporte", Activo = true };
+                areaTrans = new Area { Id = Guid.NewGuid(), Nombre = "Transporte", Prefijo = "TRA", Activo = true };
                 context.Areas.Add(areaTrans);
+            }
+            else if (string.IsNullOrEmpty(areaTrans.Prefijo))
+            {
+                areaTrans.Prefijo = "TRA";
             }
 
             // --- Área Compras ---
             var areaComp = await context.Areas.FirstOrDefaultAsync(a => a.Nombre == "Compras");
             if (areaComp == null)
             {
-                areaComp = new Area { Id = Guid.NewGuid(), Nombre = "Compras", Activo = true };
+                areaComp = new Area { Id = Guid.NewGuid(), Nombre = "Compras", Prefijo = "COM", Activo = true };
                 context.Areas.Add(areaComp);
             }
+            else if (string.IsNullOrEmpty(areaComp.Prefijo))
+            {
+                areaComp.Prefijo = "COM";
+            }
 
-            // GUARDAMOS CAMBIOS AHORA. 
-            // Esto es crucial para asegurar que las Áreas tengan ID antes de usarlas en los Tipos.
+            // GUARDAMOS CAMBIOS AHORA PARA LOS PREFIJOS
             await context.SaveChangesAsync();
 
 
@@ -78,13 +95,11 @@ namespace MiniTicker.Infrastructure.Persistence.Seeds
             foreach (var item in tiposParaCrear)
             {
                 // Verificamos si YA existe este tipo en esa área específica
-                // (Usamos AnyAsync para no duplicar)
                 var existe = await context.TiposSolicitud
                     .AnyAsync(t => t.Nombre == item.Nombre && t.AreaId == item.AreaId);
 
                 if (!existe)
                 {
-                    // Si no existe, lo agregamos
                     item.Id = Guid.NewGuid();
                     context.TiposSolicitud.Add(item);
                 }

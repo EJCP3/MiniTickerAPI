@@ -1,11 +1,14 @@
-
-using MiniTicker.Core.Domain.Domain;
-
-namespace MiniTicker.Core.Domain.Entities
+﻿namespace MiniTicker.Core.Domain.Entities
 {
-    public class Area : AuditableEntity
+    public class Area
     {
-        public string Nombre { get; set; } = null!;
-        public bool Activo { get; set; }
+        public Guid Id { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+
+        public string Prefijo { get; set; } = string.Empty;
+
+        public bool Activo { get; set; } = true;
+
+        public virtual ICollection<Ticket> Tickets { get; set; }
     }
 }

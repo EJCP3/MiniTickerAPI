@@ -28,6 +28,7 @@ namespace MiniTicker.Infrastructure.Persistence
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<ITipoSolicitudRepository, TipoSolicitudRepository>();
             services.AddScoped<IComentarioRepository, ComentarioRepository>();
+            services.AddScoped<ITicketEventRepository, TicketEventRepository>(); 
 
             // =========================
             // Application Services
@@ -38,15 +39,17 @@ namespace MiniTicker.Infrastructure.Persistence
             services.AddScoped<ITipoSolicitudService, TipoSolicitudService>();
             services.AddScoped<IAuthService, AuthService>();
 
+            // ✅ AQUÍ AGREGAS EL NUEVO SERVICIO:
+            services.AddScoped<IActivityService, ActivityService>();
+
             // =========================
             // Technical Services
             // =========================
             services.AddScoped<IJwtTokenService, JwtTokenService>();
             services.AddScoped<IFileStorageService, FileStorageService>();
-            services.AddScoped<ITicketEventRepository, TicketEventRepository>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
 
-            return services;    
+            return services;
         }
     }
 }

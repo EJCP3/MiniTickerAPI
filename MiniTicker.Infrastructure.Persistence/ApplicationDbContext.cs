@@ -31,7 +31,7 @@ namespace MiniTicker.Infrastructure.Persistence
             ConfigureUsuario(modelBuilder);
             ConfigureTicket(modelBuilder);
             ConfigureComentario(modelBuilder);
-
+            ConfigureTicketEvent(modelBuilder);
             base.OnModelCreating(modelBuilder);
         }
 
@@ -91,15 +91,11 @@ namespace MiniTicker.Infrastructure.Persistence
             entity.Property(e => e.Activo)
                   .IsRequired();
 
-            // Relacion con Area
-            entity.HasOne<Area>()
-                  .WithMany()
-                  .HasForeignKey(e => e.AreaId)
-                  .OnDelete(DeleteBehavior.Restrict)
-                  .IsRequired();
-
-            //entity.Property<DateTime>("FechaCreacion").IsRequired();
-            //entity.Property<DateTime?>("FechaModificacion");
+            entity.HasOne(e => e.Area)
+            .WithMany()
+            .HasForeignKey(e => e.AreaId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired();
         }
 
         private static void ConfigureUsuario(ModelBuilder builder)
@@ -142,71 +138,47 @@ namespace MiniTicker.Infrastructure.Persistence
         {
             var entity = builder.Entity<Ticket>();
             entity.ToTable("Tickets");
-
             entity.HasKey(e => e.Id);
 
-            // Número único por ticket
-            entity.Property(e => e.Numero)
-                  .IsRequired()
-                  .HasMaxLength(50);
+            entity.Property(e => e.Numero).IsRequired().HasMaxLength(50);
             entity.HasIndex(e => e.Numero).IsUnique();
 
-            entity.Property(e => e.Asunto)
-                  .IsRequired()
-                  .HasMaxLength(250);
-
+            entity.Property(e => e.Asunto).IsRequired().HasMaxLength(250);
             entity.HasIndex(e => e.Estado);
             entity.HasIndex(e => e.Prioridad);
 
-            entity.Property(e => e.Descripcion)
-                  .IsRequired()
-                  .HasMaxLength(4000);
+            entity.Property(e => e.Descripcion).IsRequired().HasMaxLength(4000);
 
-            // Enums como strings
-            entity.Property(e => e.Prioridad)
-                  .IsRequired()
-                  .HasConversion<string>()
-                  .HasMaxLength(50);
+            entity.Property(e => e.Prioridad).IsRequired().HasConversion<string>().HasMaxLength(50);
+            entity.Property(e => e.Estado).IsRequired().HasConversion<string>().HasMaxLength(50);
 
-            entity.Property(e => e.Estado)
-                  .IsRequired()
-                  .HasConversion<string>()
-                  .HasMaxLength(50);
-
-            entity.Property(e => e.ArchivoAdjuntoUrl)
-                  .HasMaxLength(500);
-
+            entity.Property(e => e.ArchivoAdjuntoUrl).HasMaxLength(500);
             entity.Property(e => e.FechaActualizacion);
 
-            // Relaciones
-            entity.HasOne<Area>()
+
+            entity.HasOne(e => e.Area)         
                   .WithMany()
                   .HasForeignKey(e => e.AreaId)
                   .OnDelete(DeleteBehavior.Restrict)
                   .IsRequired();
 
-            entity.HasOne<TipoSolicitud>()
+            entity.HasOne(e => e.TipoSolicitud) 
                   .WithMany()
                   .HasForeignKey(e => e.TipoSolicitudId)
                   .OnDelete(DeleteBehavior.Restrict)
                   .IsRequired();
 
-            // Solicitante (usuario) - requerido
-            entity.HasOne<Usuario>()
+            entity.HasOne(e => e.Solicitante)   
                   .WithMany()
                   .HasForeignKey(e => e.SolicitanteId)
                   .OnDelete(DeleteBehavior.Restrict)
                   .IsRequired();
 
-            // Gestor asignado - opcional, al eliminar usuario dejar null el gestor
-            entity.HasOne<Usuario>()
+            entity.HasOne(e => e.GestorAsignado) 
                   .WithMany()
                   .HasForeignKey(e => e.GestorAsignadoId)
                   .OnDelete(DeleteBehavior.SetNull)
                   .IsRequired(false);
-
-            //entity.Property<DateTime>("FechaCreacion").IsRequired();
-            //entity.Property<DateTime?>("FechaModificacion");
         }
 
         private static void ConfigureComentario(ModelBuilder builder)
@@ -237,6 +209,49 @@ namespace MiniTicker.Infrastructure.Persistence
                   .IsRequired();
         }
 
+
+        private static void ConfigureTicketEvent(ModelBuilder builder)
+        {
+            var entity = builder.Entity<TicketEvent>();
+            entity.ToTable("TicketEvents");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.TipoEvento)
+                  .IsRequired()
+                  .HasConversion<string>()
+                  .HasMaxLength(50);
+
+            entity.Property(e => e.Texto)
+                  .HasMaxLength(1000); 
+
+            entity.Property(e => e.EstadoAnterior)
+                  .HasConversion<string>()
+                  .HasMaxLength(50);
+
+            entity.Property(e => e.EstadoNuevo)
+                  .HasConversion<string>()
+                  .HasMaxLength(50);
+
+            entity.Property(e => e.Fecha)
+                  .IsRequired();
+
+            // Relación con Ticket (Borrado en cascada suele ser correcto para historial)
+            entity.HasOne(e => e.Ticket)
+                  .WithMany() // O WithMany(t => t.Events) si agregaste la colección en Ticket
+                  .HasForeignKey(e => e.TicketId)
+                  .OnDelete(DeleteBehavior.Cascade)
+                  .IsRequired();
+
+            // Relación con Usuario
+            entity.HasOne(e => e.Usuario)
+                  .WithMany()
+                  .HasForeignKey(e => e.UsuarioId)
+                  .OnDelete(DeleteBehavior.Restrict) // No borrar historial si se borra usuario
+                  .IsRequired();
+        }
         #endregion
     }
+
+
 }
