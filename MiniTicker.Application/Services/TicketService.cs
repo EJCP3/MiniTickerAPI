@@ -8,6 +8,8 @@ using MiniTicker.Core.Application.Tickets;
 using MiniTicker.Core.Application.Users;
 using MiniTicker.Core.Domain.Entities;
 using MiniTicker.Core.Domain.Enums;
+using Microsoft.AspNetCore.Http;
+using System.Runtime.Serialization;
 
 namespace MiniTicker.Core.Application.Services
 {
@@ -20,6 +22,7 @@ namespace MiniTicker.Core.Application.Services
         private readonly IUserRepository _userRepository;
         private readonly IFileStorageService _fileStorageService;
         private readonly ITicketEventRepository _ticketEventRepository;
+        private readonly IHttpContextAccessor _httpContextAccessor; // <--- NUEVO
 
         public TicketService(
             ITicketRepository ticketRepository,
@@ -28,7 +31,8 @@ namespace MiniTicker.Core.Application.Services
             IComentarioRepository comentarioRepository,
             IUserRepository userRepository,
             IFileStorageService fileStorageService,
-            ITicketEventRepository ticketEventRepository)
+            ITicketEventRepository ticketEventRepository,
+            IHttpContextAccessor httpContextAccessor)
         {
             _ticketRepository = ticketRepository;
             _areaRepository = areaRepository;
@@ -37,6 +41,7 @@ namespace MiniTicker.Core.Application.Services
             _userRepository = userRepository;
             _fileStorageService = fileStorageService;
             _ticketEventRepository = ticketEventRepository;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         // =====================================================
@@ -118,7 +123,7 @@ namespace MiniTicker.Core.Application.Services
             ticket.FechaActualizacion = DateTime.UtcNow;
             if (dto.ArchivoAdjunto != null)
             {
-           
+
                 ticket.ArchivoAdjuntoUrl = await _fileStorageService
                     .UploadAsync(dto.ArchivoAdjunto, "tickets");
             }
@@ -144,6 +149,17 @@ namespace MiniTicker.Core.Application.Services
                 ?? throw new KeyNotFoundException("Ticket no encontrado.");
 
             var estadoAnterior = ticket.Estado;
+
+            if ((int)dto.Estado <= (int)ticket.Estado)
+            {
+                throw new InvalidOperationException("No es posible retroceder el ticket a un estado anterior.");
+            }
+
+            // Si el ticket ya está en un estado final (Cerrada o Rechazada), bloquear cambios
+            if (ticket.Estado == EstadoTicket.Cerrada || ticket.Estado == EstadoTicket.Rechazada )
+            {
+                throw new InvalidOperationException("No se pueden realizar cambios en un ticket finalizado.");
+            }
 
             if (dto.Estado == EstadoTicket.Rechazada && string.IsNullOrWhiteSpace(dto.Motivo))
                 throw new InvalidOperationException("Debe indicar el motivo del rechazo.");
@@ -221,14 +237,20 @@ namespace MiniTicker.Core.Application.Services
         // PAGED LIST
         // =====================================================
         public async Task<PagedResultDto<TicketDto>> GetPagedAsync(
-            TicketFilterDto filter,
-            CancellationToken cancellationToken = default)
+    TicketFilterDto filter,
+    CancellationToken cancellationToken = default)
         {
+            // El repositorio ya recibe el objeto 'filter'. 
+            // Asegúrate de que tu TicketRepository.GetPagedAsync use el campo filter.UsuarioId 
+            // para hacer un: .Where(t => t.SolicitanteId == filter.UsuarioId) si tiene valor.
+
             var (tickets, total) = await _ticketRepository.GetPagedAsync(filter);
 
             var items = new List<TicketDto>();
             foreach (var ticket in tickets)
             {
+                // Usamos tu helper existente para que cada ticket 
+                // incluya la URL de la foto, solicitante, área, etc.
                 items.Add(await MapToTicketDtoAsync(ticket));
             }
 
@@ -240,17 +262,18 @@ namespace MiniTicker.Core.Application.Services
                 PageSize = filter.PageSize
             };
         }
-
         // =====================================================
         // DETAIL
         // =====================================================
         public async Task<TicketDetailDto?> GetByIdAsync(
-            Guid ticketId,
-            CancellationToken cancellationToken = default)
+      Guid ticketId,
+      CancellationToken cancellationToken = default)
         {
+            // 1. El repositorio trae el ticket con sus Eventos (gracias al Include que pusimos antes)
             var ticket = await _ticketRepository.GetByIdAsync(ticketId);
             if (ticket == null) return null;
 
+            // ... (Cargas de Area, Tipo, Solicitante, Gestor siguen igual) ...
             var area = await _areaRepository.GetByIdAsync(ticket.AreaId);
             var tipo = await _tipoSolicitudRepository.GetByIdAsync(ticket.TipoSolicitudId);
             var solicitante = await _userRepository.GetByIdAsync(ticket.SolicitanteId);
@@ -258,11 +281,97 @@ namespace MiniTicker.Core.Application.Services
                 ? await _userRepository.GetByIdAsync(ticket.GestorAsignadoId.Value)
                 : null;
 
-            var comentarios = await _comentarioRepository
-                .GetByTicketIdOrderedByFechaAscAsync(ticket.Id);
+            // ... (Carga de Comentarios sigue igual) ...
+            var comentarios = await _comentarioRepository.GetByTicketIdOrderedByFechaAscAsync(ticket.Id);
 
+
+            // =========================================================================
+            // 👇 AQUÍ ESTÁ EL "MAZAZO": CONSTRUIR EL HISTORIAL UNIFICADO
+            // =========================================================================
+            var historialUnificado = new List<TicketHistoryDto>();
+
+            // A. Agregar Eventos del Sistema (Cambios de estado, asignaciones, creación)
+            if (ticket.TicketEvents != null)
+            {
+                foreach (var evt in ticket.TicketEvents)
+                {
+                    // Nota: Si 'evt.Usuario' es null, intentamos buscar el nombre, 
+                    // o ponemos "Sistema" por defecto.
+                    var nombreUsuario = "Sistema";
+                    // Si hiciste .Include(t => t.TicketEvents.Select(e => e.Usuario)) en el repo, 
+                    // podrías acceder a evt.Usuario.Nombre. Si no, usa el ID o déjalo genérico.
+
+                    var item = new TicketHistoryDto
+                    {
+                        // Importante: Formato de fecha igual al Frontend
+                        Fecha = evt.Fecha.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
+                        TipoEvento = evt.TipoEvento,
+                        Descripcion = evt.Texto, // El motivo o texto del evento
+                        Titulo = evt.TipoEvento.ToString(), // Valor por defecto
+                        Subtitulo = ""
+                    };
+
+                    // Personalizar textos según el evento (Lógica que tenías en el Controller)
+                    switch (evt.TipoEvento)
+                    {
+                        case TicketEventType.Creado:
+                            item.Titulo = "Ticket Creado";
+                            item.Subtitulo = $"Solicitante: {solicitante?.Nombre ?? "Usuario"}";
+                            if (string.IsNullOrEmpty(item.Descripcion)) item.Descripcion = "Se ha registrado la solicitud.";
+                            break;
+
+                        case TicketEventType.CambioEstado:
+                            item.Titulo = $"Cambio a {evt.EstadoNuevo}";
+                            item.Descripcion = string.IsNullOrEmpty(evt.Texto)
+                                ? $"Estado cambiado de {evt.EstadoAnterior} a {evt.EstadoNuevo}"
+                                : evt.Texto;
+                            break;
+
+                        case TicketEventType.Asignado:
+                            item.Titulo = "Gestor Asignado";
+                            // Si tienes el nombre del gestor en el evento o en el ticket, úsalo
+                            item.Descripcion = "Se asignó un responsable para atender el ticket.";
+                            break;
+
+                        case TicketEventType.ComentarioADD:
+                            // Los comentarios los tratamos abajo, así que aquí podemos ignorar 
+                            // o agregar lógica especial si duplicas datos.
+                            item.Titulo = "Comentario Agregado";
+                            break;
+                    }
+                    historialUnificado.Add(item);
+                }
+            }
+
+            // B. Agregar Comentarios al Historial (para que salgan en la línea de tiempo)
+            foreach (var c in comentarios)
+            {
+                // Opcional: obtener nombre del usuario del comentario si no viene cargado
+                // var userCom = await _userRepository.GetByIdAsync(c.UsuarioId); 
+
+                historialUnificado.Add(new TicketHistoryDto
+                {
+                    Fecha = c.Fecha.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
+                    TipoEvento = TicketEventType.ComentarioADD,
+                    Titulo = "Comentario",
+                    Subtitulo = "Usuario", // O el nombre real si lo buscas
+                    Descripcion = c.Texto
+                });
+            }
+
+            // C. Ordenar: Lo más reciente primero (Descending) o antiguo primero (Ascending)
+            // Para historial suele ser Descending (lo nuevo arriba)
+            var historialOrdenado = historialUnificado
+                .OrderByDescending(h => DateTime.ParseExact(h.Fecha, "dd/MM/yyyy hh:mm tt", null))
+                .ToList();
+
+
+            // =========================================================================
+            // RETORNO FINAL
+            // =========================================================================
             return new TicketDetailDto
             {
+                Id = ticket.Id,
                 Numero = ticket.Numero,
                 Asunto = ticket.Asunto,
                 Descripcion = ticket.Descripcion,
@@ -272,15 +381,24 @@ namespace MiniTicker.Core.Application.Services
                 TipoSolicitud = MapTipo(tipo),
                 Solicitante = MapUser(solicitante),
                 Gestor = gestor != null ? MapUser(gestor) : null,
-                ArchivoAdjuntoUrl = ticket.ArchivoAdjuntoUrl,
+                ArchivoAdjuntoUrl = ticket.ArchivoAdjuntoUrl, // (O tu lógica de URL completa)
+                FechaCreacion = ticket.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
+                FechaActualizacion = (ticket.FechaActualizacion ?? ticket.FechaCreacion)
+                                      .ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
+
                 Comentarios = comentarios.Select(c => new ComentarioDto
                 {
                     Usuario = MapUser(_userRepository.GetByIdAsync(c.UsuarioId).Result),
                     Texto = c.Texto,
                     Fecha = c.Fecha.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
-                }).ToList()
+                }).ToList(),
+
+                // 👇 ¡ESTA ES LA LÍNEA QUE FALTABA!
+                Historial = historialOrdenado
             };
         }
+
+
 
         public async Task<ComentarioDto> AddCommentAsync(
     Guid ticketId,
@@ -301,6 +419,9 @@ namespace MiniTicker.Core.Application.Services
                 Texto = dto.Texto,
                 Fecha = DateTime.UtcNow
             };
+
+            ticket.FechaActualizacion = DateTime.UtcNow;
+            await _ticketRepository.UpdateAsync(ticket);
 
             // 3. Guardar en base de datos
             await _comentarioRepository.AddAsync(comentario, cancellationToken);
@@ -334,6 +455,21 @@ namespace MiniTicker.Core.Application.Services
         {
             var area = await _areaRepository.GetByIdAsync(ticket.AreaId);
             var tipo = await _tipoSolicitudRepository.GetByIdAsync(ticket.TipoSolicitudId);
+            var solicitante = await _userRepository.GetByIdAsync(ticket.SolicitanteId);
+            // 1. NUEVO: Buscamos al solicitante por su ID
+            var request = _httpContextAccessor.HttpContext?.Request;
+            var baseUrl = $"{request?.Scheme}://{request?.Host}";
+            string? fullUrl = null;
+            if (!string.IsNullOrEmpty(ticket.ArchivoAdjuntoUrl))
+            {
+                // Resultado: http://localhost:5232/uploads/tickets/archivo.pdf
+                fullUrl = $"{baseUrl}/{ticket.ArchivoAdjuntoUrl.Replace("\\", "/")}";
+            }
+            Usuario? gestor = null;
+            if (ticket.GestorAsignadoId.HasValue)
+            {
+                gestor = await _userRepository.GetByIdAsync(ticket.GestorAsignadoId.Value);
+            }
 
             return new TicketDto
             {
@@ -344,6 +480,11 @@ namespace MiniTicker.Core.Application.Services
                 Prioridad = ticket.Prioridad.ToString(),
                 Area = MapArea(area),
                 TipoSolicitud = MapTipo(tipo),
+                ArchivoAdjuntoUrl = fullUrl,
+                // 2. NUEVO: Asignamos el objeto Solicitante
+                // Asegúrate de que tu clase TicketDto tenga esta propiedad: public UserDto Solicitante { get; set; }
+                Solicitante = MapUser(solicitante),
+                Gestor = gestor != null ? MapUser(gestor) : null,
                 FechaCreacion = ticket.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
             };
         }
@@ -366,7 +507,7 @@ namespace MiniTicker.Core.Application.Services
                     Id = user.Id,
                     Nombre = user.Nombre,
                     Email = user.Email,
-                    Rol = user.Rol,
+                    Rol = user.Rol.ToString(),
                     FotoPerfilUrl = user.FotoPerfilUrl
                 };
     }

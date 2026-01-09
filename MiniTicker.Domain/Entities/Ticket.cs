@@ -26,5 +26,9 @@ namespace MiniTicker.Core.Domain.Entities
         public virtual TipoSolicitud TipoSolicitud { get; set; } = null!;
         public virtual Usuario Solicitante { get; set; } = null!;
         public virtual Usuario? GestorAsignado { get; set; }
+
+        public virtual ICollection<TicketEvent> TicketEvents { get; set; } = new List<TicketEvent>();
+        
+        public virtual ICollection<Comentario> Comentarios { get; set; } = new List<Comentario>();
     }
 }

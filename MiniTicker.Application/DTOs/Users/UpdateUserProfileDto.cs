@@ -6,10 +6,9 @@ namespace MiniTicker.Core.Application.Users
 {
     public class UpdateUserDto 
     {
-        public string Nombre { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
+        public string? Nombre { get; set; } 
+        public string? Email { get; set; } 
 
-        // Opcional: Si viene vacío, mantenemos la contraseña vieja
         public string? Password { get; set; }
 
         public Rol Rol { get; set; }

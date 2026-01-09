@@ -9,6 +9,8 @@
 
         public bool Activo { get; set; } = true;
 
+        public Guid? ResponsableId { get; set; }
+        public virtual Usuario? Responsable { get; set; }
         public virtual ICollection<Ticket> Tickets { get; set; }
     }
 }

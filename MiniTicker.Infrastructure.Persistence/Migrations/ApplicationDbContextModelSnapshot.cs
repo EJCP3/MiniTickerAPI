@@ -40,7 +40,12 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("ResponsableId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ResponsableId");
 
                     b.ToTable("Areas", (string)null);
                 });
@@ -62,6 +67,9 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("TicketId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("TicketId1")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("UsuarioId")
                         .HasColumnType("uniqueidentifier");
 
@@ -69,9 +77,40 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TicketId");
 
+                    b.HasIndex("TicketId1");
+
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("Comentarios", (string)null);
+                });
+
+            modelBuilder.Entity("MiniTicker.Core.Domain.Entities.SystemEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Detalles")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("SystemEvents", (string)null);
                 });
 
             modelBuilder.Entity("MiniTicker.Core.Domain.Entities.Ticket", b =>
@@ -85,9 +124,6 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<Guid>("AreaId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("AreaId1")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Asunto")
@@ -137,8 +173,6 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("AreaId");
 
-                    b.HasIndex("AreaId1");
-
                     b.HasIndex("Estado");
 
                     b.HasIndex("GestorAsignadoId");
@@ -179,6 +213,9 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("TicketId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("TicketId1")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("TipoEvento")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -190,6 +227,8 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TicketId");
+
+                    b.HasIndex("TicketId1");
 
                     b.HasIndex("UsuarioId");
 
@@ -270,10 +309,22 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AreaId");
+
                     b.HasIndex("Email")
                         .IsUnique();
 
                     b.ToTable("Usuarios", (string)null);
+                });
+
+            modelBuilder.Entity("MiniTicker.Core.Domain.Entities.Area", b =>
+                {
+                    b.HasOne("MiniTicker.Core.Domain.Entities.Usuario", "Responsable")
+                        .WithMany()
+                        .HasForeignKey("ResponsableId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Responsable");
                 });
 
             modelBuilder.Entity("MiniTicker.Core.Domain.Entities.Comentario", b =>
@@ -284,6 +335,10 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MiniTicker.Core.Domain.Entities.Ticket", null)
+                        .WithMany("Comentarios")
+                        .HasForeignKey("TicketId1");
+
                     b.HasOne("MiniTicker.Core.Domain.Entities.Usuario", null)
                         .WithMany()
                         .HasForeignKey("UsuarioId")
@@ -291,17 +346,24 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("MiniTicker.Core.Domain.Entities.SystemEvent", b =>
+                {
+                    b.HasOne("MiniTicker.Core.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("MiniTicker.Core.Domain.Entities.Ticket", b =>
                 {
                     b.HasOne("MiniTicker.Core.Domain.Entities.Area", "Area")
-                        .WithMany()
+                        .WithMany("Tickets")
                         .HasForeignKey("AreaId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("MiniTicker.Core.Domain.Entities.Area", null)
-                        .WithMany("Tickets")
-                        .HasForeignKey("AreaId1");
 
                     b.HasOne("MiniTicker.Core.Domain.Entities.Usuario", "GestorAsignado")
                         .WithMany()
@@ -337,6 +399,10 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MiniTicker.Core.Domain.Entities.Ticket", null)
+                        .WithMany("TicketEvents")
+                        .HasForeignKey("TicketId1");
+
                     b.HasOne("MiniTicker.Core.Domain.Entities.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId")
@@ -359,9 +425,26 @@ namespace MiniTicker.Infrastructure.Persistence.Migrations
                     b.Navigation("Area");
                 });
 
+            modelBuilder.Entity("MiniTicker.Core.Domain.Entities.Usuario", b =>
+                {
+                    b.HasOne("MiniTicker.Core.Domain.Entities.Area", "Area")
+                        .WithMany()
+                        .HasForeignKey("AreaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Area");
+                });
+
             modelBuilder.Entity("MiniTicker.Core.Domain.Entities.Area", b =>
                 {
                     b.Navigation("Tickets");
+                });
+
+            modelBuilder.Entity("MiniTicker.Core.Domain.Entities.Ticket", b =>
+                {
+                    b.Navigation("Comentarios");
+
+                    b.Navigation("TicketEvents");
                 });
 #pragma warning restore 612, 618
         }

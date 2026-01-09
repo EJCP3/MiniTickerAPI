@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using MiniTicker.Core.Application;
 using MiniTicker.Infrastructure;
@@ -12,40 +10,37 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
-using MiniTicker.Infrastructure.Persistence.Seeds; 
+using MiniTicker.Infrastructure.Persistence.Seeds;
+using Microsoft.Extensions.FileProviders; // Necesario para PhysicalFileProvider
+using System.IO; // Necesario para Path y Directory
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Limpia el mapeo por defecto para no remapear 'sub' a 'nameidentifier'
+// =======================================================================
+// 1. CONFIGURACIÃ“N DE SERVICIOS (BUILDER)
+// =======================================================================
+
+// Limpia el mapeo por defecto de claims
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
-// ==============================
-// Add services to the container
-// ==============================
 
-builder.Services.AddControllers();
-
-
+// CORS: Permitir acceso desde cualquier origen (Ãºtil para desarrollo)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSwagger",
-        policy =>
-        {
-            policy
-                .AllowAnyOrigin()
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
 
-
+// Controllers con configuraciÃ³n para ignorar ciclos en JSON
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        // ESTA LÍNEA ES LA MAGIA QUE EVITA EL CIERRE (CRASH):
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
-
 
 // Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
@@ -53,7 +48,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "MiniTicker API", Version = "v1" });
 
-    // Definición del header de seguridad
+    // DefiniciÃ³n de seguridad JWT para Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -64,7 +59,6 @@ builder.Services.AddSwaggerGen(c =>
         Description = "Ingrese el token JWT."
     });
 
-    // Requerimiento de seguridad (El que te faltaba antes)
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -81,10 +75,10 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// El resto del código de autenticación y configuración debe ir después de AddSwaggerGen
+// ConfiguraciÃ³n de AutenticaciÃ³n JWT
 var signingKey = builder.Configuration.GetValue<string>("Jwt:Key");
 if (string.IsNullOrWhiteSpace(signingKey))
-    throw new InvalidOperationException("Falta la configuración 'Jwt:Key'.");
+    throw new InvalidOperationException("Falta la configuraciÃ³n 'Jwt:Key' en appsettings.");
 
 builder.Services
     .AddAuthentication(options =>
@@ -99,32 +93,61 @@ builder.Services
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"], // Asegúrate que lea del appsettings
-
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidateAudience = true,
             ValidAudience = builder.Configuration["Jwt:Audience"],
-
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
-
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero,
-
-            // IMPORTANTE: Mapear a los nombres cortos que definimos en AuthService
             NameClaimType = "nombre",
             RoleClaimType = ClaimTypes.Role
         };
     });
-// Application & Infrastructure
+
+// Capas de AplicaciÃ³n e Infraestructura
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHttpContextAccessor(); // Importante para generar URLs completas
 
-// ==============================
-// Build app
-// ==============================
+// =======================================================================
+// 2. CONSTRUCCIÃ“N DE LA APP
+// =======================================================================
 
 var app = builder.Build();
+
+// =======================================================================
+// 3. CONFIGURACIÃ“N DE CARPETA UPLOADS (ARCHIVOS ESTÃTICOS)
+// =======================================================================
+
+// Usamos ContentRootPath para asegurar la ruta correcta
+var uploadsPath = Path.Combine(builder.Environment.ContentRootPath, "uploads");
+
+// Crear la carpeta si no existe
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+// Habilitar acceso web a la carpeta uploads
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads",
+    OnPrepareResponse = ctx =>
+    {
+        // Forzar descarga agregando header Content-Disposition
+        ctx.Context.Response.Headers.Append(
+            "Content-Disposition", $"attachment; filename=\"{ctx.File.Name}\"");
+    }
+});
+
+// Habilitar archivos estÃ¡ticos por defecto (wwwroot) si los usas
+app.UseStaticFiles(); 
+
+// =======================================================================
+// 4. SEEDER (DATOS INICIALES)
+// =======================================================================
 
 using (var scope = app.Services.CreateScope())
 {
@@ -132,26 +155,20 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
-
-        // Simplemente llamamos a tu clase orquestadora
         await DbInitializer.SeedAsync(context);
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Ocurrió un error al ejecutar el Seed de datos.");
+        logger.LogError(ex, "OcurriÃ³ un error al ejecutar el Seed de datos.");
     }
 }
 
+// =======================================================================
+// 5. PIPELINE DE MIDDLEWARE (ORDEN IMPORTANTE)
+// =======================================================================
 
-// ==============================
-// Middleware pipeline
-// ==============================
 app.UseMiddleware<ErrorHandlerMiddleware>();
-
-app.UseCors("AllowSwagger");
-
-
 
 if (app.Environment.IsDevelopment())
 {
@@ -159,9 +176,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseStaticFiles();
-
 app.UseHttpsRedirection();
+
+// CORS debe ir antes de Auth
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();

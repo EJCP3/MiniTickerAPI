@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MiniTicker.Infrastructure.Persistence;
@@ -47,6 +49,13 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
         {
             return await _context.Tickets
                 .AsNoTracking()
+        // 👇 Ahora usamos los nombres que acabamos de crear en la Entidad
+        .Include(t => t.TicketEvents)
+        .Include(t => t.Comentarios)
+
+        // Incluimos datos extra para que se vea bonito en el front
+        .Include(t => t.Solicitante)
+        .Include(t => t.GestorAsignado)
                 .FirstOrDefaultAsync(t => t.Id == ticketId)
                 .ConfigureAwait(false);
         }
@@ -102,11 +111,29 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
             return list;
         }
 
+        public async Task<bool> AnyAsync(Expression<Func<Ticket, bool>> predicate, CancellationToken cancellationToken = default)
+        {
+            // Usamos la función AnyAsync de Entity Framework para consultar eficiente
+            return await _context.Tickets.AnyAsync(predicate, cancellationToken);
+        }
+
         public async Task<(IReadOnlyList<Ticket> Tickets, int TotalCount)> GetPagedAsync(TicketFilterDto filter)
         {
             if (filter == null) throw new ArgumentNullException(nameof(filter));
 
-            var query = _context.Tickets.AsNoTracking().AsQueryable();
+            var query = _context.Tickets
+          .AsNoTracking()
+          .Include(t => t.Area)
+          .Include(t => t.Solicitante)
+          .Include(t => t.GestorAsignado) // Importante para saber si tiene gestor
+          .AsQueryable();
+
+            if (filter.UsuarioId.HasValue)
+            {
+                // Filtramos para que solo devuelva los tickets creados por este usuario
+                query = query.Where(t => t.SolicitanteId == filter.UsuarioId.Value);
+            }
+
 
             // Aplicar filtros opcionales
             if (filter.Estado.HasValue)
@@ -136,6 +163,14 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
                 query = query.Where(t => t.FechaCreacion < fechaFin);
             }
 
+            if (filter.TieneGestor.HasValue)
+            {
+                if (filter.TieneGestor.Value)
+                    query = query.Where(t => t.GestorAsignadoId != null); // Tickets asignados
+                else
+                    query = query.Where(t => t.GestorAsignadoId == null); // Tickets huérfanos
+            }
+
             if (!string.IsNullOrWhiteSpace(filter.TextoBusqueda))
             {
                 var texto = filter.TextoBusqueda.Trim().ToLower();
@@ -163,6 +198,39 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
                 .ConfigureAwait(false);
 
             return (items, totalCount);
+        }
+        public async Task<Dictionary<int, int>> GetStatusSummaryAsync(TicketFilterDto filter)
+        {
+            // Usamos AsNoTracking para mejorar el rendimiento en conteos
+            var query = _context.Tickets.AsNoTracking().AsQueryable();
+
+            // ✅ Filtros dinámicos (Asegúrate de NO filtrar por Estado aquí si quieres el resumen de todas las pestañas)
+            if (!string.IsNullOrWhiteSpace(filter.TextoBusqueda))
+                query = query.Where(t => t.Asunto.Contains(filter.TextoBusqueda) || t.Descripcion.Contains(filter.TextoBusqueda));
+
+            if (filter.AreaId.HasValue)
+                query = query.Where(t => t.AreaId == filter.AreaId.Value);
+
+            if (filter.UsuarioId.HasValue)
+                query = query.Where(t => t.SolicitanteId == filter.UsuarioId.Value);
+
+            if (filter.Prioridad.HasValue)
+                query = query.Where(t => t.Prioridad == filter.Prioridad.Value);
+
+            if (filter.TieneGestor.HasValue)
+                query = filter.TieneGestor.Value
+                    ? query.Where(t => t.GestorAsignadoId != null)
+                    : query.Where(t => t.GestorAsignadoId == null);
+
+            // ✅ La Clave: Agrupar por el valor entero del Enum
+            // Esto genera un SQL: GROUP BY [Estado] (donde Estado es int)
+            var result = await query
+         .GroupBy(t => t.Estado) // Agrupamos por el Enum directamente
+         .Select(g => new { Estado = g.Key, Cantidad = g.Count() })
+         .ToListAsync();
+
+            // ✅ PASO 2: Convertimos a Diccionario en memoria de C# (donde no habrá error de SQL)
+            return result.ToDictionary(x => (int)x.Estado, x => x.Cantidad);
         }
     }
 }

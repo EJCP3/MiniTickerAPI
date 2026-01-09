@@ -8,5 +8,7 @@
         public string Mensaje { get; set; } = string.Empty;
         public string Fecha { get; set; } = string.Empty;
         public string Tipo { get; set; } = string.Empty;
+
+        public DateTime FechaCreacion { get; set; }
     }
 }

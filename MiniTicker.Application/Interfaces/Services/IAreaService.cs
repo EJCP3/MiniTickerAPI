@@ -18,5 +18,7 @@ namespace MiniTicker.Core.Application.Interfaces.Services
         Task ActivateAsync(Guid id, CancellationToken cancellationToken = default);
 
         Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+        Task QuitarResponsableArea(Guid areaId , Guid usuarioId);
     }
 }

@@ -25,17 +25,22 @@ namespace MiniTicker.WebApi.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IComentarioRepository _comentarioRepository;
 
+        private readonly ITicketRepository _ticketRepository;
+
         public TicketController(
             ITicketService ticketService,
             ITicketEventRepository ticketEventRepository,
             IUserRepository userRepository,
-            IComentarioRepository comentarioRepository)
+            IComentarioRepository comentarioRepository,
+            ITicketRepository ticketRepository
+            )
 
         {
             _ticketService = ticketService ?? throw new ArgumentNullException(nameof(ticketService));
             _ticketEventRepository = ticketEventRepository ?? throw new ArgumentNullException(nameof(ticketEventRepository));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-            _comentarioRepository = comentarioRepository;
+            _comentarioRepository = comentarioRepository ?? throw new ArgumentNullException(nameof(comentarioRepository));
+            _ticketRepository = ticketRepository ?? throw new ArgumentNullException(nameof(ticketRepository));
         }
 
         private bool TryGetUserId(out Guid userId)
@@ -80,6 +85,34 @@ namespace MiniTicker.WebApi.Controllers
         [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetPaged([FromQuery] TicketFilterDto filter, CancellationToken cancellationToken)
         {
+            // 1. Obtenemos el ID del usuario actual
+            if (!TryGetUserId(out var userId))
+            {
+                return Unauthorized("No se pudo identificar al usuario logueado.");
+            }
+
+            // 2. Aplicamos restricciones según el Rol
+            if (User.IsInRole("Solicitante"))
+            {
+                // El solicitante SOLO ve lo que él creó
+                filter.UsuarioId = userId;
+            }
+            else if (User.IsInRole("Gestor"))
+            {
+                // El Gestor SOLO ve los tickets de su área asignada
+                var usuarioActivo = await _userRepository.GetByIdAsync(userId);
+
+                if (usuarioActivo != null && usuarioActivo.AreaId.HasValue)
+                {
+                    // Forzamos el filtro por su AreaId. 
+                    // Esto sobrescribe cualquier intento de buscar otra área desde el frontend.
+                    filter.AreaId = usuarioActivo.AreaId.Value;
+                }
+            }
+
+            // Los roles Admin y SuperAdmin no entran en los IF anteriores, 
+            // por lo que conservan el acceso total y respetan los filtros que envíen.
+
             var result = await _ticketService.GetPagedAsync(filter, cancellationToken).ConfigureAwait(false);
             return Ok(result);
         }
@@ -107,6 +140,24 @@ namespace MiniTicker.WebApi.Controllers
             return Ok(updated);
         }
 
+        [HttpGet("summary")]
+        [Authorize]
+        public async Task<IActionResult> GetStatusSummaryAsync([FromQuery] TicketFilterDto filter)
+        {
+            if (!TryGetUserId(out var userId)) return Unauthorized();
+
+            // Aplicar lógica de seguridad igual que en el listado
+            if (User.IsInRole("Solicitante")) filter.UsuarioId = userId;
+            else if (User.IsInRole("Gestor"))
+            {
+                var gestor = await _userRepository.GetByIdAsync(userId);
+                if (gestor?.AreaId != null) filter.AreaId = gestor.AreaId;
+            }
+
+            // ✅ Ahora 'summary' no es void
+            var summary = await _ticketRepository.GetStatusSummaryAsync(filter);
+            return Ok(summary);
+        }
         [HttpPatch("{ticketId:guid}/status")]
         [Authorize(Roles = "Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> ChangeStatus(Guid ticketId, [FromBody] ChangeTicketStatusDto dto, CancellationToken cancellationToken)
@@ -154,6 +205,8 @@ namespace MiniTicker.WebApi.Controllers
 
             return Ok(result);
         }
+
+
         [HttpGet("{id:guid}/historial")]
         [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetHistorial(Guid id, CancellationToken cancellationToken)
@@ -166,7 +219,7 @@ namespace MiniTicker.WebApi.Controllers
                 .ConfigureAwait(false);
 
             var comentarios = await _comentarioRepository
-                .GetByTicketIdOrderedByFechaAscAsync(id); 
+                .GetByTicketIdOrderedByFechaAscAsync(id);
             var items = new System.Collections.Generic.List<TicketHistoryDto>();
 
             // --- PROCESAR EVENTOS ---
@@ -181,7 +234,7 @@ namespace MiniTicker.WebApi.Controllers
                     TipoEvento = e.TipoEvento,
                     EstadoAnterior = e.EstadoAnterior,
                     EstadoNuevo = e.EstadoNuevo,
-                   
+
                 };
 
                 switch (e.TipoEvento)
@@ -195,11 +248,11 @@ namespace MiniTicker.WebApi.Controllers
                         dto.Titulo = $"Estado actualizado a {e.EstadoNuevo}";
                         dto.Subtitulo = $"Por: {autorNombreRol}";
                         string descripcion = $"Cambio de estado de {e.EstadoAnterior} a {e.EstadoNuevo}";
-                        if (!string.IsNullOrEmpty(e.Texto)) descripcion = $". Motivo: {e.Texto}";
+                        if (!string.IsNullOrEmpty(e.Texto)) descripcion = $"Motivo: {e.Texto}";
                         dto.Descripcion = descripcion;
                         break;
                     case Core.Domain.Enums.TicketEventType.ComentarioADD:
-                       
+
                         dto.Titulo = "Comentario agregado";
                         dto.Subtitulo = $"Por: {autorNombreRol}";
                         dto.Descripcion = e.Texto;

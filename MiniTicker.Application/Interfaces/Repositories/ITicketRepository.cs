@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using MiniTicker.Core.Domain.Entities;
 using MiniTicker.Core.Application.Filters;
-
+using System.Linq.Expressions;
 namespace MiniTicker.Core.Application.Interfaces.Repositories
 {
     public interface ITicketRepository
@@ -18,5 +18,7 @@ namespace MiniTicker.Core.Application.Interfaces.Repositories
         Task<(IReadOnlyList<Ticket> Tickets, int TotalCount)> GetPagedAsync(TicketFilterDto filter);
         Task<int> GetNextSequenceForYearAsync(int year);
 
+        Task<bool> AnyAsync(Expression<Func<Ticket, bool>> predicate, CancellationToken cancellationToken = default);
+        Task<Dictionary<int, int>> GetStatusSummaryAsync(TicketFilterDto filter);
     }
 }

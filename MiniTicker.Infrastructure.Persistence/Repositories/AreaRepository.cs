@@ -47,32 +47,33 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
         {
             return await _context.Areas
                 .AsNoTracking()
+                .Include(a => a.Tickets)
                 .FirstOrDefaultAsync(a => a.Id == id)
                 .ConfigureAwait(false);
         }
 
-        public async Task<IReadOnlyList<Area>> GetAllAsync(bool incluirInactivos = false, CancellationToken cancellationToken = default)
-        {
-            // 1. Preparamos la consulta base
-            var query = _context.Areas.AsNoTracking();
+  public async Task<IReadOnlyList<Area>> GetAllAsync(bool incluirInactivos = false, CancellationToken cancellationToken = default)
+{
+    // ✅ CORRECCIÓN: Cambiamos 'var' por 'IQueryable<Area>'
+    // Esto permite que podamos modificar la query con Where y OrderBy sin errores.
+    IQueryable<Area> query = _context.Areas
+        .AsNoTracking()
+        .Include(a => a.Tickets); 
 
-            // 2. Aplicamos el filtro:
-            // Si NO queremos ver inactivos (!incluirInactivos), filtramos solo los Activos.
-            if (incluirInactivos)
-            {
-                query = query.Where(t => t.Activo == false); // Modo Papelera
-            }
-            else
-            {
-                query = query.Where(t => t.Activo == true); // Modo Normal
-            }
-
-
-            // 3. Ordenamos por nombre para que la lista se vea ordenada
-            query = query.OrderBy(a => a.Nombre);
-
-            // 4. Ejecutamos pasando el token
-            return await query.ToListAsync(cancellationToken).ConfigureAwait(false);
-        }
+    // 2. Aplicamos el filtro
+    if (incluirInactivos)
+    {
+        query = query.Where(t => t.Activo == false);
     }
+    else
+    {
+        query = query.Where(t => t.Activo == true);
+    }
+
+    // 3. Ordenamos
+    query = query.OrderBy(a => a.Nombre);
+
+    // 4. Ejecutamos
+    return await query.ToListAsync(cancellationToken).ConfigureAwait(false);
 }
+}}

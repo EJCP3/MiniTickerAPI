@@ -9,7 +9,7 @@ using MiniTicker.Core.Application.Users;
 namespace MiniTicker.WebApi.Controllers
 {
     [ApiController]
-    [Authorize(Roles = "SuperAdmin")]
+      [Authorize(Roles = "Admin,SuperAdmin")]
     [Route("api/users")]
     [Tags("05. Usuarios")]
     public class UserController : ControllerBase
@@ -20,14 +20,15 @@ namespace MiniTicker.WebApi.Controllers
         {
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         }
-
+       [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
         {
             var items = await _userService.GetAllAsync(cancellationToken).ConfigureAwait(false);
             return Ok(items);
-        }
+        }  
 
+        [Authorize]
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
         {
@@ -35,7 +36,7 @@ namespace MiniTicker.WebApi.Controllers
             if (user == null) return NotFound();
             return Ok(user);
         }
-
+       
         [HttpPost]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> Create([FromForm] CreateUserDto dto, CancellationToken cancellationToken)
@@ -56,14 +57,14 @@ namespace MiniTicker.WebApi.Controllers
             return Ok(result);
         }
 
-
+     
         [HttpPut("{id:guid}/activate")]
         public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
         {
             await _userService.ActivateAsync(id, cancellationToken).ConfigureAwait(false);
             return NoContent();
         }
-
+     
         [HttpPut("{id:guid}/deactivate")]
         public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)
         {
@@ -71,6 +72,7 @@ namespace MiniTicker.WebApi.Controllers
             return NoContent();
         }
 
+       
         [HttpDelete("{id:guid}")]
         
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)

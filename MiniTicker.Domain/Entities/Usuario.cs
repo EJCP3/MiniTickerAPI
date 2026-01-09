@@ -12,6 +12,8 @@ namespace MiniTicker.Core.Domain.Entities
 
         public Rol Rol { get; set; }
         public Guid? AreaId { get; set; }
+
+        public virtual Area? Area { get; set; }
         public bool Activo { get; set; }
         public string? FotoPerfilUrl { get; set; }
     }

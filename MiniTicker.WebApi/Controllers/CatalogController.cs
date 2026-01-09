@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MiniTicker.Core.Application.Catalogs;
 using MiniTicker.Core.Application.Interfaces.Services;
+using MiniTicker.Core.Application.Users;
 using MiniTicker.Core.Domain.Enums;
 using System;
 using System.Linq;
@@ -21,10 +22,13 @@ namespace MiniTicker.WebApi.Controllers
         private readonly IAreaService _areaService;
         private readonly ITipoSolicitudService _tipoService;
 
-        public CatalogController(IAreaService areaService, ITipoSolicitudService tipoService)
+        private readonly IUserService _userService;
+
+        public CatalogController(IAreaService areaService, ITipoSolicitudService tipoService, IUserService userService)
         {
             _areaService = areaService ?? throw new ArgumentNullException(nameof(areaService));
             _tipoService = tipoService ?? throw new ArgumentNullException(nameof(tipoService));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         }
 
         // ============================
@@ -43,8 +47,8 @@ namespace MiniTicker.WebApi.Controllers
         [HttpPost("areas")]
         [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> CreateArea(
-              [FromBody] CreateAreaDto dto,       
-              CancellationToken cancellationToken) 
+              [FromBody] CreateAreaDto dto,
+              CancellationToken cancellationToken)
         {
             if (dto == null) return BadRequest();
 
@@ -88,11 +92,33 @@ namespace MiniTicker.WebApi.Controllers
             return Ok(new { message = "El área ha sido reactivada exitosamente." });
         }
 
+        [HttpPatch("areas/{id:guid}/desactivate")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
+
+        public async Task<IActionResult> DeactivateArea(Guid id, CancellationToken cancellationToken)
+        {
+            await _areaService.DeactivateAsync(id, cancellationToken);
+            return Ok(new { message = "El área ha sido desactivada exitosamente." });
+        }
+
+        [HttpPatch("areas/{id:guid}/quitar-responsable/{usuarioId:guid}")]
+        public async Task<IActionResult> QuitarResponsable(Guid id, Guid usuarioId)
+        {
+            try
+            {
+                await _areaService.QuitarResponsableArea(id, usuarioId);
+                return NoContent(); // Retorna 204 si todo salió bien
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
         // ============================
         // TIPOS DE SOLICITUD
         // ============================
 
-       
+
         [HttpGet("tipos-solicitud")]
         [Authorize(Roles = "Solicitante,Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetTipos(
@@ -104,7 +130,7 @@ namespace MiniTicker.WebApi.Controllers
             return Ok(items);
         }
 
-       
+
         [HttpPost("tipos-solicitud")]
         [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> CreateTipo([FromBody] TipoSolicitudDto dto)
@@ -139,6 +165,21 @@ namespace MiniTicker.WebApi.Controllers
             return Ok(new { message = "El registro ha sido reactivado exitosamente." });
         }
 
+        [HttpPatch("tipos-solicitud/{id:guid}/desactivate")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
+        public async Task<IActionResult> DeactivateTipo(Guid id, CancellationToken cancellationToken)
+        {
+            await _tipoService.DeactivateAsync(id, cancellationToken);
+            return Ok(new { message = "El registro ha sido desactivado exitosamente." });
+        }
+
+        [HttpGet("managers-selection")]
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetManagersForSelection()
+        {
+            // Llamamos al servicio que ahora sí filtra por estado activo
+            var managers = await _userService.GetActiveManagersAsync();
+            return Ok(managers);
+        }
         // ============================
         // OTROS
         // ============================

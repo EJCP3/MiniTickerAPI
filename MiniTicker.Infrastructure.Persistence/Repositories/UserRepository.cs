@@ -36,20 +36,22 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
 
         public async Task<Usuario?> GetByIdAsync(Guid id)
         {
-            return await _context.Usuarios
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == id)
-                .ConfigureAwait(false);
+          return await _context.Usuarios
+        .Include(u => u.Area) // 👈 Carga el objeto Area relacionado
+        .AsNoTracking()
+        .FirstOrDefaultAsync(u => u.Id == id)
+        .ConfigureAwait(false);
         }
 
         public async Task<Usuario?> GetByEmailAsync(string email)
         {
             if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("El email es obligatorio.", nameof(email));
 
-            return await _context.Usuarios
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Email == email)
-                .ConfigureAwait(false);
+           return await _context.Usuarios
+        .Include(u => u.Area) // 👈 Carga el objeto Area relacionado
+        .AsNoTracking()
+        .FirstOrDefaultAsync(u => u.Email == email)
+        .ConfigureAwait(false);
         }
         public async Task DeleteAsync(Usuario usuario)
         {
@@ -63,11 +65,14 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
         public async Task<IReadOnlyList<Usuario>> GetAllAsync(CancellationToken cancellationToken)
         {
             var list = await _context.Usuarios
-                .AsNoTracking()
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
+        .Include(u => u.Area) // 👈 Carga el objeto Area para toda la lista
+        .AsNoTracking()
+        .ToListAsync(cancellationToken)
+        .ConfigureAwait(false);
 
             return list;
         }
+ 
+        
     }
 }
