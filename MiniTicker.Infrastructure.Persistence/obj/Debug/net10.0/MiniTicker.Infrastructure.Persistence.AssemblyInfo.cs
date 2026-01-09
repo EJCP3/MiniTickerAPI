@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MiniTicker.Infrastructure.Persistence")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2fb8626d53fdf5ff095330b8f837c22a8ee3ef94")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+47f708754281a0d276713ea3716a7b512fde883b")]
 [assembly: System.Reflection.AssemblyProductAttribute("MiniTicker.Infrastructure.Persistence")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MiniTicker.Infrastructure.Persistence")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
