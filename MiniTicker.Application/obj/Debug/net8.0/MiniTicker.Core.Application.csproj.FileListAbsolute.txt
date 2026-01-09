@@ -1,0 +1,16 @@
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\bin\Debug\net8.0\MiniTicker.Core.Application.deps.json
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\bin\Debug\net8.0\MiniTicker.Core.Application.dll
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\bin\Debug\net8.0\MiniTicker.Core.Application.pdb
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\bin\Debug\net8.0\MiniTicker.Core.Domain.dll
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\bin\Debug\net8.0\MiniTicker.Core.Domain.pdb
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\obj\Debug\net8.0\MiniTicker.Core.Application.csproj.AssemblyReference.cache
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\obj\Debug\net8.0\MiniTicker.Core.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\obj\Debug\net8.0\MiniTicker.Core.Application.AssemblyInfoInputs.cache
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\obj\Debug\net8.0\MiniTicker.Core.Application.AssemblyInfo.cs
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\obj\Debug\net8.0\MiniTicker.Core.Application.csproj.CoreCompileInputs.cache
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\obj\Debug\net8.0\MiniTicker.Core.Application.sourcelink.json
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\obj\Debug\net8.0\MiniTick.DA85ECB8.Up2Date
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\obj\Debug\net8.0\MiniTicker.Core.Application.dll
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\obj\Debug\net8.0\refint\MiniTicker.Core.Application.dll
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\obj\Debug\net8.0\MiniTicker.Core.Application.pdb
+C:\Users\euddy\Desktop\Pagina web\MiniTicker\MiniTickerAPI\MiniTicker.Application\obj\Debug\net8.0\ref\MiniTicker.Core.Application.dll

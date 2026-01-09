@@ -1,0 +1,734 @@
+[
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.ActivityController",
+    "Method": "GetGlobalActivity",
+    "RelativePath": "api/activity/global",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "areaId",
+        "Type": "System.Nullable\u00601[[System.Guid, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "userId",
+        "Type": "System.Nullable\u00601[[System.Guid, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "04. Actividad"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.ActivityController",
+    "Method": "GetMyActivity",
+    "RelativePath": "api/activity/mine",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [],
+    "Tags": [
+      "04. Actividad"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.AuthController",
+    "Method": "Login",
+    "RelativePath": "api/auth/login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "MiniTicker.Core.Application.Auth.LoginRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "01. Auth"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "GetAreas",
+    "RelativePath": "api/catalog/areas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "mostrarInactivos",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "CreateArea",
+    "RelativePath": "api/catalog/areas",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "MiniTicker.Core.Application.Catalogs.CreateAreaDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "GetAreaById",
+    "RelativePath": "api/catalog/areas/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "UpdateArea",
+    "RelativePath": "api/catalog/areas/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "MiniTicker.Core.Application.Catalogs.AreaDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "DeleteArea",
+    "RelativePath": "api/catalog/areas/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "ActivateArea",
+    "RelativePath": "api/catalog/areas/{id}/activate",
+    "HttpMethod": "PATCH",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "GetPrioridades",
+    "RelativePath": "api/catalog/prioridades",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "GetTipos",
+    "RelativePath": "api/catalog/tipos-solicitud",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "areaId",
+        "Type": "System.Nullable\u00601[[System.Guid, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "mostrarInactivos",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "CreateTipo",
+    "RelativePath": "api/catalog/tipos-solicitud",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "MiniTicker.Core.Application.Catalogs.TipoSolicitudDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "UpdateTipo",
+    "RelativePath": "api/catalog/tipos-solicitud/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "MiniTicker.Core.Application.Catalogs.TipoSolicitudDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "DeleteTipo",
+    "RelativePath": "api/catalog/tipos-solicitud/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.CatalogController",
+    "Method": "ActivateTipo",
+    "RelativePath": "api/catalog/tipos-solicitud/{id}/activate",
+    "HttpMethod": "PATCH",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "02. Cat\u00E1logos"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.TicketController",
+    "Method": "Create",
+    "RelativePath": "api/tickets",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "AreaId",
+        "Type": "System.Guid",
+        "IsRequired": false
+      },
+      {
+        "Name": "TipoSolicitudId",
+        "Type": "System.Guid",
+        "IsRequired": false
+      },
+      {
+        "Name": "Asunto",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Descripcion",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Prioridad",
+        "Type": "MiniTicker.Core.Domain.Enums.Prioridad",
+        "IsRequired": false
+      },
+      {
+        "Name": "ArchivoAdjunto",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "03. Tickets"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.TicketController",
+    "Method": "GetPaged",
+    "RelativePath": "api/tickets",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "Estado",
+        "Type": "System.Nullable\u00601[[MiniTicker.Core.Domain.Enums.EstadoTicket, MiniTicker.Core.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "AreaId",
+        "Type": "System.Nullable\u00601[[System.Guid, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "Prioridad",
+        "Type": "System.Nullable\u00601[[MiniTicker.Core.Domain.Enums.Prioridad, MiniTicker.Core.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "FechaDesde",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "FechaHasta",
+        "Type": "System.Nullable\u00601[[System.DateTime, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "TextoBusqueda",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Page",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "PageSize",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "03. Tickets"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.TicketController",
+    "Method": "GetHistorial",
+    "RelativePath": "api/tickets/{id}/historial",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "03. Tickets"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.TicketController",
+    "Method": "GetById",
+    "RelativePath": "api/tickets/{ticketId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "ticketId",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "03. Tickets"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.TicketController",
+    "Method": "Update",
+    "RelativePath": "api/tickets/{ticketId}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "ticketId",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "Asunto",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Descripcion",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Prioridad",
+        "Type": "MiniTicker.Core.Domain.Enums.Prioridad",
+        "IsRequired": false
+      },
+      {
+        "Name": "ArchivoAdjunto",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "03. Tickets"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.TicketController",
+    "Method": "Assign",
+    "RelativePath": "api/tickets/{ticketId}/assign",
+    "HttpMethod": "PATCH",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "ticketId",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "MiniTicker.Core.Application.Tickets.AssignTicketDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "03. Tickets"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.TicketController",
+    "Method": "AddComment",
+    "RelativePath": "api/tickets/{ticketId}/comentarios",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "ticketId",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "MiniTicker.Core.Application.Comments.CreateComentarioDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "03. Tickets"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.TicketController",
+    "Method": "ChangeStatus",
+    "RelativePath": "api/tickets/{ticketId}/status",
+    "HttpMethod": "PATCH",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "ticketId",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "MiniTicker.Core.Application.Tickets.ChangeTicketStatusDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "03. Tickets"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.UserController",
+    "Method": "GetAll",
+    "RelativePath": "api/users",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [],
+    "Tags": [
+      "05. Usuarios"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.UserController",
+    "Method": "Create",
+    "RelativePath": "api/users",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "Nombre",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Email",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Password",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Rol",
+        "Type": "MiniTicker.Core.Domain.Enums.Rol",
+        "IsRequired": false
+      },
+      {
+        "Name": "AreaId",
+        "Type": "System.Nullable\u00601[[System.Guid, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "Activo",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      },
+      {
+        "Name": "FotoPerfil",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "05. Usuarios"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.UserController",
+    "Method": "GetById",
+    "RelativePath": "api/users/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "05. Usuarios"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.UserController",
+    "Method": "UpdateUser",
+    "RelativePath": "api/users/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      },
+      {
+        "Name": "Nombre",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Email",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Password",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Rol",
+        "Type": "MiniTicker.Core.Domain.Enums.Rol",
+        "IsRequired": false
+      },
+      {
+        "Name": "AreaId",
+        "Type": "System.Nullable\u00601[[System.Guid, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "Activo",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      },
+      {
+        "Name": "FotoPerfil",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "05. Usuarios"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.UserController",
+    "Method": "Delete",
+    "RelativePath": "api/users/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "05. Usuarios"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.UserController",
+    "Method": "Activate",
+    "RelativePath": "api/users/{id}/activate",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "05. Usuarios"
+    ]
+  },
+  {
+    "ContainingType": "MiniTicker.WebApi.Controllers.UserController",
+    "Method": "Deactivate",
+    "RelativePath": "api/users/{id}/deactivate",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [],
+    "Tags": [
+      "05. Usuarios"
+    ]
+  }
+]

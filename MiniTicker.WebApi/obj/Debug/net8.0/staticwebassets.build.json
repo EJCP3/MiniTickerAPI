@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "u6PI3KDH2C15JHtHDX0QCbHbtXkrLdw0T807voq5O6Y=",
+  "Source": "MiniTicker.WebApi",
+  "BasePath": "_content/MiniTicker.WebApi",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
