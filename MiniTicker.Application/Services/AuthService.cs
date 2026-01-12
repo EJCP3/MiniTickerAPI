@@ -9,6 +9,7 @@ using MiniTicker.Core.Application.Interfaces.Services;
 using MiniTicker.Core.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using MiniTicker.Core.Application.Users;
+using MiniTicker.Core.Application.DTOs.Auth;
 
 namespace MiniTicker.Core.Application.Services
 {
@@ -20,11 +21,13 @@ namespace MiniTicker.Core.Application.Services
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ISystemEventRepository _eventRepository;
 
+        private readonly IFileStorageService _fileStorageService;
+
         public AuthService(
             IUserRepository userRepository,
             IPasswordHasher passwordHasher,
             IConfiguration configuration,
-            IHttpContextAccessor httpContextAccessor, ISystemEventRepository eventRepository)
+            IHttpContextAccessor httpContextAccessor, ISystemEventRepository eventRepository, IFileStorageService fileStorageService)
         {
             _userRepository = userRepository
                 ?? throw new ArgumentNullException(nameof(userRepository));
@@ -33,7 +36,8 @@ namespace MiniTicker.Core.Application.Services
             _configuration = configuration
                 ?? throw new ArgumentNullException(nameof(configuration));
             _eventRepository = eventRepository ?? throw new ArgumentNullException(nameof(eventRepository));
-            _httpContextAccessor = httpContextAccessor;
+            _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+            _fileStorageService = fileStorageService ?? throw new ArgumentNullException(nameof(fileStorageService));
         }
 
         // =====================================================
@@ -90,6 +94,7 @@ namespace MiniTicker.Core.Application.Services
             return new LoginResponseDto
             {
                 Token = token,
+                DebeCambiarPassword = usuario.DebeCambiarPassword,
                 // Agrega esta propiedad a tu LoginResponseDto si no existe
                 User = new UserDto
                 {
@@ -101,11 +106,53 @@ namespace MiniTicker.Core.Application.Services
                     FechaCreacion = usuario.FechaCreacion,
                     // AÑADE ESTAS DOS LÍNEAS 👇
                     AreaId = usuario.AreaId,
-                    AreaNombre = usuario.Area?.Nombre
+                    AreaNombre = usuario.Area?.Nombre,
+
+
                 }
             };
         }
 
+        public async Task<string> CompleteSetupAsync(Guid userId, InitialSetupRequest request)
+        {
+            // 1. Buscar al usuario
+            var usuario = await _userRepository.GetByIdAsync(userId)
+                ?? throw new KeyNotFoundException("Usuario no encontrado");
+
+            // 2. Actualizar Password
+            usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+            // ==============================================================================
+            // ✅ AQUÍ FALTA ESTO: Si no pones este bloque, la foto nunca se guarda
+            // ==============================================================================
+            if (request.FotoPerfil != null)
+            {
+                // Guardamos el archivo físico y actualizamos la ruta en el objeto usuario
+                usuario.FotoPerfilUrl = await _fileStorageService.UploadAsync(request.FotoPerfil, "usuarios");
+            }
+            // ==============================================================================
+
+            // 3. Desbloquear usuario
+            usuario.DebeCambiarPassword = false;
+
+            // 4. Guardar cambios en Base de Datos
+            await _userRepository.UpdateAsync(usuario);
+
+            // 5. Generar URL completa para responder al frontend
+            string fotoUrlResponse = usuario.FotoPerfilUrl;
+
+            if (!string.IsNullOrEmpty(usuario.FotoPerfilUrl))
+            {
+                var httpRequest = _httpContextAccessor.HttpContext?.Request;
+                if (httpRequest != null)
+                {
+                    var baseUrl = $"{httpRequest.Scheme}://{httpRequest.Host}";
+                    fotoUrlResponse = $"{baseUrl}/{usuario.FotoPerfilUrl.TrimStart('/')}";
+                }
+            }
+
+            return fotoUrlResponse ?? string.Empty;
+        }
         public async Task LogoutAsync()
         {
             // 1. Obtenemos el ID del usuario actual usando el HttpContextAccessor que ya tienes inyectado

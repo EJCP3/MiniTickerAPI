@@ -1,9 +1,12 @@
-﻿using System;
+﻿
+using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using MiniTicker.Core.Application.Auth;
 using Microsoft.AspNetCore.Authorization;
 using MiniTicker.Core.Application.Interfaces.Services;
+using MiniTicker.Core.Application.DTOs.Auth;
 
 namespace MiniTicker.WebApi.Controllers
 {
@@ -47,6 +50,23 @@ namespace MiniTicker.WebApi.Controllers
             await _authService.LogoutAsync();
 
             return Ok(new { message = "Sesión cerrada registrada" });
+        }
+
+        [HttpPost("complete-setup")]
+        [Authorize]
+        public async Task<IActionResult> CompleteSetup([FromForm] InitialSetupRequest request)
+        {
+            // Obtener ID del token de forma segura
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst("uid")?.Value;
+
+            if (!Guid.TryParse(userIdClaim, out Guid userId))
+                return Unauthorized();
+
+            // Llamamos al servicio, NO al context directamente
+            var fotoUrl = await _authService.CompleteSetupAsync(userId, request);
+
+            return Ok(new { fotoUrl });
         }
     }
 }

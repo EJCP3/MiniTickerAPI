@@ -7,5 +7,7 @@ namespace MiniTicker.Core.Application.Auth
         public string Token { get; set; } = null!;
 
         public UserDto User { get; set; } = null!;
+
+        public bool DebeCambiarPassword { get; set; }
     }
 }
