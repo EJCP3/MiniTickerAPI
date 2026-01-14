@@ -49,6 +49,7 @@ namespace MiniTicker.Infrastructure.Persistence
             services.AddScoped<IFileStorageService, FileStorageService>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<ISystemEventRepository, SystemEventRepository>();
+            services.AddScoped<IDashboardService, DashboardService>();
             return services;
         }
     }

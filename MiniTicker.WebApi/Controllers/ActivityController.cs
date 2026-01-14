@@ -14,11 +14,14 @@ namespace MiniTicker.WebApi.Controllers
     [Tags("04. Actividad")]
     public class ActivityController : ControllerBase
     {
-        private readonly IActivityService _activityService;
 
-        public ActivityController(IActivityService activityService)
+        private readonly IActivityService _activityService;
+        private readonly IDashboardService _dashboardService;
+
+        public ActivityController(IActivityService activityService, IDashboardService dashboardService)
         {
             _activityService = activityService;
+            _dashboardService = dashboardService;
         }
 
         // Endpoint anterior (Mi Actividad)
@@ -34,7 +37,7 @@ namespace MiniTicker.WebApi.Controllers
         [Authorize(Roles = "Gestor,Admin,SuperAdmin")]
         public async Task<IActionResult> GetGlobalActivity(
        [FromQuery] Guid? areaId,
-       [FromQuery] Guid? userId 
+       [FromQuery] Guid? userId
    )
         {
             if (!TryGetUserId(out var currentUserId)) return Unauthorized();
@@ -53,5 +56,14 @@ namespace MiniTicker.WebApi.Controllers
                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             return !string.IsNullOrEmpty(claim) && Guid.TryParse(claim, out userId);
         }
+
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetStats([FromQuery] string periodo, [FromQuery] Guid? areaId)
+        {
+            // Pasamos el areaId (puede ser null o un número)
+            var result = await _dashboardService.GetStatsAsync(periodo, areaId);
+            return Ok(result);
+        }
     }
+
 }

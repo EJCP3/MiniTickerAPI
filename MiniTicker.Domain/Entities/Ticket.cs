@@ -10,6 +10,8 @@ namespace MiniTicker.Core.Domain.Entities
         public string Descripcion { get; set; } = string.Empty;
 
         public DateTime? FechaActualizacion { get; set; }
+
+        
         public Prioridad Prioridad { get; set; }
         public EstadoTicket Estado { get; set; }
 

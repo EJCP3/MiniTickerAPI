@@ -20,5 +20,7 @@ namespace MiniTicker.Core.Application.Interfaces.Repositories
 
         Task<bool> AnyAsync(Expression<Func<Ticket, bool>> predicate, CancellationToken cancellationToken = default);
         Task<Dictionary<int, int>> GetStatusSummaryAsync(TicketFilterDto filter);
+
+        IQueryable<Ticket> GetAllAsQueryable();
     }
 }

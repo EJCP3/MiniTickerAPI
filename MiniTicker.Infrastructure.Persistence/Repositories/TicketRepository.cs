@@ -232,5 +232,12 @@ namespace MiniTicker.Infrastructure.Persistence.Repositories
             // ✅ PASO 2: Convertimos a Diccionario en memoria de C# (donde no habrá error de SQL)
             return result.ToDictionary(x => (int)x.Estado, x => x.Cantidad);
         }
+
+        public IQueryable<Ticket> GetAllAsQueryable()
+    {
+        // Esto devuelve la consulta "viva" para que el Service pueda hacer filtros y sumas
+        // sin traerse todos los datos a la memoria RAM de golpe.
+        return _context.Tickets.AsQueryable();
+    }
     }
 }
